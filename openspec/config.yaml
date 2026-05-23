@@ -1,0 +1,51 @@
+schema: spec-driven
+
+context: |
+  Project name: spec-ui
+
+  Product direction:
+  - Build a real-time dashboard tool compatible with multiple spec-driven standards.
+  - The first delivery target is a Web application.
+  - The later target is desktop packaging.
+  - The project is in an early shaping phase. Product behavior, information architecture, technical stack, contribution workflow, and packaging strategy changes must be defined through OpenSpec first.
+  - The MVP should let users choose a local project directory from the UI. Early Web builds may use a path-based picker/input backed by a local server; a later desktop build may replace it with a native folder picker.
+  - Realtime project updates should use WebSocket transport unless a later approved design changes the realtime protocol.
+
+  Language and localization:
+  - English is the primary project language.
+  - User-facing product text should default to English unless an approved localization spec says otherwise.
+  - Multilingual support should include English and Chinese when localization is in scope.
+  - Do not make Chinese the default language for project artifacts, UI, docs, or generated content.
+
+  Technical stack:
+  - Use the latest Next.js version.
+  - Use pnpm as the default package manager.
+  - Install dependencies and scaffolding through CLI/package-manager commands that resolve current package metadata; do not hand-write package.json to add dependencies.
+  - Local project reading and file watching should run outside React UI components behind a server/runtime boundary.
+  - Prefer a robust cross-platform watcher for local project changes; verify the package choice before adding it.
+
+  UI and interaction stack:
+  - Use shadcn/ui as the primary component foundation.
+  - Use the official shadcn CLI for adding components; do not manually copy component package metadata into package.json.
+  - Use Motion for UI animation and interaction transitions when animation is part of the approved scope.
+  - Keep animation purposeful, fast, and supportive of dashboard usability.
+  - Prefer composable, accessible primitives over bespoke UI widgets when the approved stack already provides a suitable option.
+
+  OpenSpec:
+  - The project currently uses only the root openspec/ directory.
+  - OpenSpec artifacts default to English.
+  - Each change must include observable acceptance scenarios and validation tasks.
+
+  Open source:
+  - The project later needs CONTRIBUTING, Issue/PR templates, and development setup documentation.
+  - The open-source contribution workflow itself must be defined through OpenSpec before writing those project documents.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
