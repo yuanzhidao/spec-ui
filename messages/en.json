@@ -1,0 +1,262 @@
+{
+  "common": {
+    "allProjects": "All Projects",
+    "specUi": "spec-ui"
+  },
+  "navigation": {
+    "groups": {
+      "workbench": "Workbench",
+      "operate": "Operate"
+    },
+    "sections": {
+      "specs": "Specs",
+      "changes": "Changes",
+      "projects": "Projects",
+      "activity": "Activity",
+      "validation": "Validation",
+      "settings": "Settings"
+    }
+  },
+  "sidebar": {
+    "focusedProject": "Focused project",
+    "allProjects": "All projects",
+    "switchProject": "Switch project",
+    "search": "Search",
+    "runValidation": "Run validation",
+    "projects": "Projects",
+    "clearProjects": "Clear projects",
+    "projectCount": "{count, plural, =1 {# project} other {# projects}}",
+    "removeProject": "Remove {name}"
+  },
+  "header": {
+    "addProjects": "Add local spec-driven projects",
+    "allProjects": "All Projects",
+    "projectFallback": "Project",
+    "back": "Back"
+  },
+  "search": {
+    "title": "Search",
+    "description": "Search app sections, commands, changes, and specs.",
+    "placeholder": "Search sections, commands, changes, specs...",
+    "empty": "No results found.",
+    "groups": {
+      "sections": "Sections",
+      "commands": "Commands",
+      "projects": "Projects",
+      "changes": "Changes",
+      "specs": "Specs"
+    },
+    "commands": {
+      "showAllProjects": "Show all projects",
+      "runValidation": "Run validation",
+      "openValidation": "Open validation output"
+    },
+    "emptyStates": {
+      "projects": "No projects",
+      "changes": "No active changes",
+      "specs": "No specs"
+    }
+  },
+  "workboard": {
+    "searchPlaceholder": "Search {kind}",
+    "filterAria": "Filter {label}",
+    "displayOptions": "Display options",
+    "display": "Display",
+    "hideMetadata": "Hide metadata",
+    "showMetadata": "Show metadata",
+    "groupByProject": "Group by project",
+    "view": "View",
+    "board": "Board",
+    "list": "List",
+    "specs": "specs",
+    "changes": "changes",
+    "noSpecs": "No specs",
+    "noActiveChanges": "No active changes",
+    "noSpecsFound": "No specs found.",
+    "noChangesFound": "No active changes found.",
+    "requirementsShort": "{count} reqs"
+    ,"sort": {
+      "title": "Sort",
+      "createdAt": "Created time",
+      "updatedAt": "Modified time",
+      "name": "Name",
+      "active": "Active"
+    },
+    "badges": {
+      "proposal": "proposal",
+      "design": "design",
+      "tasks": "tasks",
+      "scopes": "{count} scopes"
+    }
+  },
+  "projects": {
+    "title": "Projects",
+    "newProject": "New project",
+    "addTitle": "Add project",
+    "addDescription": "Bind a readable local directory. OpenSpec structure is detected automatically.",
+    "searchPlaceholder": "Search projects",
+    "view": "View",
+    "grid": "Grid",
+    "list": "List",
+    "empty": "No projects found.",
+    "focused": "Focused",
+    "changesLabel": "Changes",
+    "scopes": "{count} scopes",
+    "specs": "{count} specs",
+    "changes": "{count} changes",
+    "events": "Events",
+    "metrics": {
+      "scopes": "Scopes",
+      "specs": "Specs",
+      "active": "Active"
+    },
+    "actions": {
+      "showAll": "Show all projects",
+      "focus": "Focus project"
+    },
+    "remove": {
+      "aria": "Remove project",
+      "title": "Remove project?",
+      "description": "This removes the project from spec-ui only. Local files are not deleted.",
+      "cancel": "Cancel",
+      "confirm": "Remove project"
+    },
+    "settings": {
+      "aria": "Project settings",
+      "title": "Project settings",
+      "description": "Update the local directory while keeping this project identity.",
+      "localDirectory": "Local directory",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  },
+  "projectSelector": {
+    "title": "Add project directory",
+    "description": "Enter a readable local path. OpenSpec is detected automatically.",
+    "placeholder": "~/workspace/example",
+    "bind": "Bind"
+  },
+  "settings": {
+    "title": "Settings",
+    "personal": "Personal",
+    "runtime": "Runtime",
+    "tabs": {
+      "preferences": "Preferences",
+      "validation": "Validation",
+      "system": "System"
+    },
+    "preferences": {
+      "theme": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "language": "Language",
+      "english": "English",
+      "chinese": "中文"
+    },
+    "panels": {
+      "projectsTitle": "Projects",
+      "projectsDescription": "Local project collection used by the runtime.",
+      "validationTitle": "Validation",
+      "validationDescription": "Current validation state for the focused project.",
+      "systemTitle": "System",
+      "systemDescription": "Runtime settings and focused project discovery."
+    },
+    "keys": {
+      "projects": "Projects",
+      "focusedProject": "Focused project",
+      "visibleSpecs": "Visible specs",
+      "visibleChanges": "Visible changes",
+      "status": "Status",
+      "command": "Command",
+      "exitCode": "Exit code",
+      "started": "Started",
+      "ended": "Ended",
+      "settingsVersion": "Settings version",
+      "watcher": "Watcher",
+      "connection": "Connection",
+      "dialect": "Dialect",
+      "openspecDirectory": "OpenSpec directory",
+      "scopes": "Scopes",
+      "config": "Config",
+      "specsDirectory": "Specs directory",
+      "changesDirectory": "Changes directory"
+    },
+    "values": {
+      "notRun": "Not run",
+      "none": "None",
+      "mixed": "mixed"
+    }
+  },
+  "activity": {
+    "title": "Activity",
+    "description": "Recent normalized project events",
+    "empty": "No realtime events received."
+  },
+  "loading": {
+    "workspace": "Loading workspace",
+    "projectContext": "Loading project context"
+  },
+  "status": {
+    "realtime": "Realtime"
+  },
+  "validation": {
+    "title": "Validation",
+    "description": "Manual OpenSpec validation result",
+    "run": "Run validation",
+    "status": {
+      "not-run": "not run",
+      "running": "running",
+      "passing": "passing",
+      "failing": "failing",
+      "stale": "stale"
+    }
+  },
+  "details": {
+    "spec": {
+      "notFoundTitle": "Spec not found",
+      "notFoundDescription": "The project or spec is no longer available.",
+      "back": "Back to Specs",
+      "emptyContent": "No spec content available."
+    },
+    "change": {
+      "notFoundTitle": "Change not found",
+      "notFoundDescription": "The project or change is no longer available.",
+      "back": "Back to Changes",
+      "tabs": {
+        "overview": "Overview",
+        "tasks": "Tasks",
+        "deltaSpecs": "Delta Specs",
+        "files": "Files"
+      },
+      "overview": {
+        "why": "Why",
+        "whatChanges": "What Changes",
+        "design": "Design",
+        "proposal": "Proposal",
+        "emptyProposal": "No proposal content."
+      },
+      "tasks": {
+        "empty": "No tasks found.",
+        "todo": "Todo",
+        "completed": "Completed",
+        "emptyTodo": "No todo tasks.",
+        "emptyCompleted": "No completed tasks."
+      },
+      "empty": {
+        "detail": "No change detail available.",
+        "deltaSpecs": "No delta specs found.",
+        "files": "No markdown files found."
+      }
+    }
+  },
+  "emptyProject": {
+    "title": "No projects added",
+    "description": "Open Projects to add local directories and load specs, changes, validation, and activity.",
+    "action": "Open Projects"
+  },
+  "runtime": {
+    "unreachable": "The local runtime is not reachable.",
+    "actionFailed": "Runtime action failed."
+  }
+}

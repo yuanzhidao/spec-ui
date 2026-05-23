@@ -1,0 +1,69 @@
+name: Feature request
+description: Suggest a new capability or workflow improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for product behavior, UI, runtime, adapter, or workflow ideas.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem or workflow gap should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the desired outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you consider?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Specs workbench
+        - Changes workbench
+        - Projects
+        - Validation
+        - Activity
+        - Settings
+        - Local runtime
+        - Desktop shell
+        - Spec dialect adapter
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: openspec
+    attributes:
+      label: OpenSpec likely required?
+      options:
+        - Yes
+        - No
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add screenshots, examples, or constraints.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: I searched existing issues before opening this request.
+          required: true

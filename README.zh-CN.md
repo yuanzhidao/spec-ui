@@ -1,0 +1,175 @@
+# spec-ui
+
+spec-ui 是一个面向 spec-driven AI development 的通用 UI。
+
+它会把本地 spec 工作流转换成实时看板。目前首批支持 OpenSpec，后续会通过适配器模型扩展到更多 spec 格式。
+
+**[English](./README.md) | 简体中文**
+
+## spec-ui 是什么？
+
+spec-driven 项目里的上下文通常分散在 changes、specs、tasks、deltas、validation output 等文件里。spec-ui 的目标是把这些本地项目结构变成一个更容易浏览、导航和审阅的产品界面。
+
+它不是要替代某一种 spec 系统，而是为维护者、贡献者和 AI agents 提供一个共享的操作界面，让大家围绕同一份 spec-driven 上下文协作。
+
+首批支持的工作流是 OpenSpec：
+
+- 添加一个或多个本地项目目录。
+- 自动识别 OpenSpec 工作区，包括 monorepo 里的嵌套 scope。
+- 跟踪 changes、specs、task progress、files 和 validation state。
+- 监听本地文件变化，并实时更新看板。
+- 在全局项目视图和单项目聚焦视图之间切换，同时保留上下文。
+
+后续可以通过新的 adapter 支持更多 spec 格式，而不需要改变主看板模型。
+
+## 界面预览
+
+**Changes board**
+
+<p align="center">
+  <img src="docs/assets/changes.png" alt="spec-ui changes board" width="900">
+</p>
+
+**Change tasks**
+
+<p align="center">
+  <img src="docs/assets/tasks.png" alt="spec-ui change tasks view" width="900">
+</p>
+
+## 当前状态
+
+spec-ui 仍处于早期阶段。产品界面、runtime 边界和 adapter contract 会通过经过 review 的 OpenSpec change 继续演进。
+
+API、UI flow、runtime behavior、desktop integration 和 adapter contract 都可能继续调整。
+
+| 模块 | 状态 |
+| --- | --- |
+| Web dashboard | Active MVP |
+| OpenSpec adapter | First supported dialect |
+| Multi-project dashboard | Active MVP |
+| Monorepo scope detection | Active MVP |
+| Realtime local updates | Active MVP |
+| Desktop shell | In progress |
+| Additional spec dialects | Planned |
+
+## 核心功能
+
+- **Project dashboard**：在一个工作区里管理多个本地项目。
+- **Change board**：查看 OpenSpec changes 的进度、scope、task、spec 和 file 上下文。
+- **Spec board**：跨项目浏览 specs，也可以进入单个项目聚焦查看。
+- **Monorepo scopes**：自动识别嵌套 `openspec` 目录，并把同一个 change ID 下的不同 scope 汇总到同一个项目里。
+- **Realtime updates**：本地 runtime 监听文件变化，并通过 WebSocket 推送给 UI。
+- **Local settings**：项目状态和偏好设置保存在本地 `~/.spec-ui/settings.json`。
+- **Theme and language preferences**：支持 light、dark、system 主题，并已打下英文优先的多语言基础。
+- **Desktop-ready direction**：Web app 是优先交付形态，Tauri 提供后续桌面端路径。
+
+## 使用流程
+
+1. 本地启动 spec-ui。
+2. 打开 **Projects**，添加一个本地项目目录。
+3. spec-ui 会自动识别目录里的 OpenSpec 结构。
+4. 打开 **Changes**，查看 active changes、tasks、scopes、deltas、specs 和 files。
+5. 打开 **Specs**，浏览项目 specs。
+6. 在 **Settings** 里调整主题和语言偏好。
+
+对于 monorepo，只需要添加仓库根目录。spec-ui 会自动识别其中存在的嵌套 `openspec` scope，并只展示实际存在的 scope。
+
+## 技术栈
+
+| 层 | 技术 |
+| --- | --- |
+| Web app | Next.js, React, TypeScript |
+| UI | shadcn/ui, Base UI primitives, Motion |
+| Local runtime | Hono, WebSocket, file watcher |
+| Spec planning | OpenSpec |
+| Desktop shell | Tauri v2 |
+| Package manager | pnpm |
+| Tests | Vitest, TypeScript, ESLint |
+
+## 架构
+
+```text
+┌────────────────────┐
+│   Next.js Web UI   │
+│ boards, settings,  │
+│ project navigation │
+└─────────┬──────────┘
+          │ HTTP + WebSocket
+┌─────────▼──────────┐
+│   Local Runtime    │
+│ Hono API, watcher, │
+│ settings store     │
+└─────────┬──────────┘
+          │ local file access
+┌─────────▼──────────┐
+│  Project Folders   │
+│ openspec changes,  │
+│ specs, tasks, docs │
+└────────────────────┘
+
+┌────────────────────┐
+│   Tauri Shell      │
+│ desktop container  │
+│ for the Web app    │
+└────────────────────┘
+```
+
+Local runtime 负责本地文件访问、目录发现、settings 持久化和文件监听。React components 消费结构化后的项目数据，不直接读取文件系统。
+
+## 环境要求
+
+- Node.js 22 或更新版本。
+- pnpm 10 或更新版本。
+- OpenSpec validation 需要 `PATH` 上可用的 OpenSpec CLI。
+- Tauri 桌面开发需要 Rust stable toolchain。
+- macOS 上进行 Tauri 开发需要 Xcode Command Line Tools。
+
+## 从源码运行
+
+```bash
+pnpm install
+pnpm dev
+```
+
+默认开发命令会同时启动 Next.js app 和 local runtime。
+
+开发服务启动后，打开 http://localhost:3000。
+
+## 桌面端开发
+
+当前 Tauri shell 会在开发模式下加载本地 Web app。
+
+```bash
+source "$HOME/.cargo/env"
+pnpm desktop:dev
+```
+
+## 开发检查
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+openspec validate --all
+```
+
+涉及 Tauri 的改动：
+
+```bash
+source "$HOME/.cargo/env"
+cd src-tauri
+cargo fmt --check
+cargo check
+```
+
+## 贡献
+
+提交 pull request 前请先阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+
+涉及行为、UI、runtime、adapter、packaging、dependency、automation 或 policy 的重要改动，需要先通过 OpenSpec change 定义清楚再实现。
+
+JavaScript package 操作请使用 pnpm。新增依赖应该通过 package manager 或官方 CLI 完成，不要手写 package manifest。
+
+## 许可证
+
+Apache-2.0。见 [LICENSE](./LICENSE)。

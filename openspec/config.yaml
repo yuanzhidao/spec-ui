@@ -19,9 +19,11 @@ context: |
 
   Technical stack:
   - Use the latest Next.js version.
+  - Use Tauri v2 for the desktop shell while preserving the existing Web stack.
   - Use pnpm as the default package manager.
   - Install dependencies and scaffolding through CLI/package-manager commands that resolve current package metadata; do not hand-write package.json to add dependencies.
   - Local project reading and file watching should run outside React UI components behind a server/runtime boundary.
+  - Use a maintained directory walking/glob utility for local scope discovery instead of hand-rolled recursive traversal when project scanning behavior is in scope.
   - Prefer a robust cross-platform watcher for local project changes; verify the package choice before adding it.
 
   UI and interaction stack:
