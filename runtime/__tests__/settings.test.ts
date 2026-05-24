@@ -34,7 +34,12 @@ describe("runtime settings", () => {
       version: 2,
       themeMode: "system",
       language: "zh",
-      projects: [{ id: "prj_test000000", path: "/tmp/spec-ui" }],
+      projects: [{
+        id: "prj_test000000",
+        path: "/tmp/spec-ui",
+        worktreesPath: "/tmp/spec-ui-worktrees",
+        worktreePaths: ["/tmp/orphan-worktree"],
+      }],
       focusedProjectId: "prj_test000000",
     });
 
@@ -45,7 +50,12 @@ describe("runtime settings", () => {
       version: 2,
       themeMode: "system",
       language: "zh",
-      projects: [{ id: "prj_test000000", path: "/tmp/spec-ui" }],
+      projects: [{
+        id: "prj_test000000",
+        path: "/tmp/spec-ui",
+        worktreesPath: "/tmp/spec-ui-worktrees",
+        worktreePaths: ["/tmp/orphan-worktree"],
+      }],
       focusedProjectId: "prj_test000000",
     });
   });
@@ -70,6 +80,7 @@ describe("runtime settings", () => {
     expect(result.settings.version).toBe(2);
     expect(result.settings.projects).toHaveLength(1);
     expect(result.settings.projects[0].path).toBe("/tmp/spec-ui");
+    expect(result.settings.projects[0].worktreePaths).toEqual([]);
     expect(result.settings.projects[0].id).toMatch(/^prj_[a-z0-9]{8}$/);
     expect(result.settings.focusedProjectId).toBe(result.settings.projects[0].id);
   });
@@ -94,6 +105,7 @@ describe("runtime settings", () => {
     expect(result.settings.language).toBe("en");
     expect(result.settings.projects).toHaveLength(1);
     expect(result.settings.projects[0].path).toBe("/tmp/legacy-project");
+    expect(result.settings.projects[0].worktreePaths).toEqual([]);
     expect(result.settings.projects[0].id).toMatch(/^prj_[a-z0-9]{8}$/);
     expect(result.settings.focusedProjectId).toBe(result.settings.projects[0].id);
   });

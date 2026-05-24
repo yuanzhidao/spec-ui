@@ -98,11 +98,68 @@ describe("RuntimeState project collection", () => {
     await state.relocateProject(projectId, newPath);
     snapshot = await state.snapshot();
 
-    expect(snapshot.settings.projects).toEqual([{ id: projectId, path: newPath }]);
+    expect(snapshot.settings.projects).toEqual([{ id: projectId, path: newPath, worktreePaths: [] }]);
     expect(snapshot.settings.focusedProjectId).toBe(projectId);
     expect(snapshot.dashboard.projects).toHaveLength(1);
     expect(snapshot.dashboard.projects[0].project.id).toBe(projectId);
     expect(snapshot.dashboard.projects[0].project.path).toBe(newPath);
     expect(snapshot.dashboard.specs[0].id).toBe("alpha-moved");
+  });
+
+  it("persists worktrees directory and manual orphan worktree paths", async () => {
+    await tempHome();
+    const state = new RuntimeState();
+    await state.initialize();
+    const projectPath = await fixtureProject("alpha");
+
+    await state.addProject(projectPath);
+    let snapshot = await state.snapshot();
+    const projectId = snapshot.settings.projects[0].id;
+
+    await state.updateProjectWorktreesPath(projectId, "/tmp/spec-ui-worktrees");
+    await state.addProjectWorktreePath(projectId, "/tmp/spec-ui-orphan");
+    snapshot = await state.snapshot();
+
+    expect(snapshot.settings.projects[0]).toMatchObject({
+      id: projectId,
+      path: projectPath,
+      worktreesPath: "/tmp/spec-ui-worktrees",
+      worktreePaths: ["/tmp/spec-ui-orphan"],
+    });
+
+    await state.removeProjectWorktreePath(projectId, "/tmp/spec-ui-orphan");
+    snapshot = await state.snapshot();
+    expect(snapshot.settings.projects[0].worktreePaths).toEqual([]);
+  });
+
+  it("refreshes an explicitly selected project even when another project is focused", async () => {
+    await tempHome();
+    const state = new RuntimeState();
+    await state.initialize();
+    const alpha = await fixtureProject("alpha");
+    const beta = await fixtureProject("beta");
+
+    await state.addProject(alpha);
+    await state.addProject(beta);
+    await state.focusProject(alpha);
+    let snapshot = await state.snapshot();
+    const betaId = snapshot.settings.projects.find((project) => project.path === beta)?.id;
+    if (!betaId) {
+      throw new Error("beta project id was not created");
+    }
+
+    await mkdir(path.join(beta, "apps", "web", "openspec", "specs", "beta-web"), {
+      recursive: true,
+    });
+    await writeFile(
+      path.join(beta, "apps", "web", "openspec", "specs", "beta-web", "spec.md"),
+      "# beta web\n\n### Requirement: beta web requirement\n",
+    );
+
+    await state.refreshProject(betaId);
+    snapshot = await state.snapshot();
+    const betaProject = snapshot.dashboard.projects.find((project) => project.project.id === betaId);
+
+    expect(betaProject?.scopes.map((scope) => scope.id).sort()).toEqual(["apps_web", "root"]);
   });
 });

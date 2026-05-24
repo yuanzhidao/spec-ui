@@ -26,6 +26,14 @@ const relocateProjectSchema = z.object({
   path: z.string().min(1),
 });
 
+const worktreesDirectorySchema = z.object({
+  path: z.string().min(1).nullable(),
+});
+
+const worktreePathSchema = z.object({
+  path: z.string().min(1),
+});
+
 const validationRunSchema = z
   .object({
     path: z.string().min(1).optional(),
@@ -144,10 +152,64 @@ export function createRuntimeApp() {
     return c.json(await runtimeState.relocateProject(c.req.param("projectId"), body.data.path));
   });
 
+  app.put("/api/projects/:projectId/worktrees-directory", async (c) => {
+    const body = worktreesDirectorySchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) {
+      return c.json(
+        {
+          issue: {
+            code: "runtime-error",
+            message: "Worktrees directory path must be a string or null.",
+          },
+        },
+        400,
+      );
+    }
+
+    return c.json(
+      await runtimeState.updateProjectWorktreesPath(
+        c.req.param("projectId"),
+        body.data.path,
+      ),
+    );
+  });
+
+  app.post("/api/projects/:projectId/worktrees", async (c) => {
+    const body = worktreePathSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) {
+      return c.json(
+        {
+          issue: {
+            code: "missing-path",
+            message: "Worktree path is required.",
+          },
+        },
+        400,
+      );
+    }
+
+    return c.json(
+      await runtimeState.addProjectWorktreePath(c.req.param("projectId"), body.data.path),
+    );
+  });
+
+  app.delete("/api/projects/:projectId/worktrees/:encodedPath", async (c) =>
+    c.json(
+      await runtimeState.removeProjectWorktreePath(
+        c.req.param("projectId"),
+        decodeURIComponent(c.req.param("encodedPath")),
+      ),
+    ),
+  );
+
   app.delete("/api/project", async (c) => c.json(await runtimeState.clearProject()));
 
   app.post("/api/project/refresh", async (c) =>
     c.json(await runtimeState.refreshProject()),
+  );
+
+  app.post("/api/projects/:projectId/refresh", async (c) =>
+    c.json(await runtimeState.refreshProject(c.req.param("projectId"))),
   );
 
   app.put("/api/settings/theme", async (c) => {

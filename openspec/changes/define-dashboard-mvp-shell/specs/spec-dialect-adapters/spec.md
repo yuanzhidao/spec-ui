@@ -32,25 +32,29 @@ Each scoped entity SHALL include the persistent project ID plus scope identity f
 - **WHEN** a detected scope contains active Changes
 - **THEN** the adapter attaches that scope's identity to each normalized Change, task item, delta spec, and file entry projected from that scope
 
+#### Scenario: Adapter projects archived OpenSpec changes
+- **WHEN** a detected scope contains `openspec/changes/archive/<change-id>/`
+- **THEN** the adapter projects that Change with an archived lifecycle and keeps it separate from active Changes with the same Change ID
+
 #### Scenario: Adapter projects scoped validation
 - **WHEN** validation state is available for a scoped OpenSpec project
 - **THEN** the adapter exposes validation status for that scope without replacing the project-level validation summary
 
 ### Requirement: Same-id scoped Changes aggregate inside one project
-The system SHALL aggregate active Changes that share the same Change ID across scopes within the same project.
+The system SHALL aggregate Changes that share the same lifecycle and Change ID across scopes within the same project.
 
 The aggregated Change SHALL preserve per-scope title, status, task progress, delta spec files, and file entries so scoped differences remain inspectable.
 
 #### Scenario: Same Change ID exists in multiple scopes
-- **WHEN** two or more scopes in one project contain an active Change with the same Change ID
+- **WHEN** two or more scopes in one project contain a Change with the same lifecycle and Change ID
 - **THEN** the normalized project projection exposes one aggregated Change with scoped child entries for each matching scope
 
 #### Scenario: Change exists in only one scope
-- **WHEN** only one scope contains a given active Change ID
+- **WHEN** only one scope contains a given lifecycle and Change ID
 - **THEN** the normalized project projection exposes the Change with one scoped child entry and does not create placeholder scoped Changes
 
 #### Scenario: Same Change ID exists in different projects
-- **WHEN** two different projects contain the same active Change ID
+- **WHEN** two different projects contain the same lifecycle and Change ID
 - **THEN** the runtime keeps those Changes separate by project and does not aggregate them across projects
 
 #### Scenario: Scoped Change task progress differs
@@ -66,18 +70,18 @@ The system SHALL support OpenSpec as the first implemented spec dialect.
 
 #### Scenario: OpenSpec data is projected
 - **WHEN** the OpenSpec adapter reads an OpenSpec project
-- **THEN** it exposes scopes, active changes, specs, requirements, proposal/design/tasks presence, and validation status in the normalized model
+- **THEN** it exposes scopes, active and archived changes, specs, requirements, proposal/design/tasks presence, and validation status in the normalized model
 
 #### Scenario: OpenSpec Spec detail is projected
 - **WHEN** the OpenSpec adapter reads a baseline Spec
 - **THEN** it exposes the Spec markdown content needed by the Spec detail view
 
 #### Scenario: OpenSpec entity timestamps are projected
-- **WHEN** the OpenSpec adapter reads specs and active changes
+- **WHEN** the OpenSpec adapter reads specs and changes
 - **THEN** it exposes creation and modification timestamps derived from the local spec and change directories in the normalized model
 
 #### Scenario: OpenSpec Change detail is projected
-- **WHEN** the OpenSpec adapter reads an active Change
+- **WHEN** the OpenSpec adapter reads a Change
 - **THEN** it exposes proposal overview, design content, task items, delta spec markdown files, and markdown file entries needed by the Change detail view
 
 ### Requirement: Future dialects remain extensible

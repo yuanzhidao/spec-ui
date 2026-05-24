@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock3, FolderKanban, FolderOpen } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
 import type { ValidationResult } from "@/lib/dashboard-types";
 import { AppLink } from "@/components/navigation/app-link";
@@ -8,6 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { paths } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+
+const hoverExpandTransition = { type: "tween", duration: 0.8, ease: [0.25, 0.1, 0.25, 1] } as const;
+const collapseHeightTransition = { type: "tween", duration: 0.24, ease: [0.32, 0.72, 0, 1] } as const;
+const collapseContentTransition = { type: "tween", duration: 0.18, ease: [0.22, 1, 0.36, 1] } as const;
 
 export function relativeOpenSpecPath(sourcePath: string) {
   const normalized = sourcePath.replaceAll("\\", "/");
@@ -36,15 +41,94 @@ export function SectionHeader({
   );
 }
 
+export function HoverExpandFrame({
+  compactWidth,
+  expandedWidth,
+  className,
+  title,
+  children,
+}: {
+  compactWidth: number;
+  expandedWidth: number;
+  className?: string;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <motion.span
+      className={cn("inline-flex min-w-0 max-w-full shrink overflow-hidden", className)}
+      title={title}
+      initial={false}
+      style={{ maxWidth: compactWidth }}
+      whileHover={{ maxWidth: expandedWidth }}
+      transition={reduceMotion ? { duration: 0 } : hoverExpandTransition}
+    >
+      {children}
+    </motion.span>
+  );
+}
+
+export function MotionCollapse({
+  open,
+  className,
+  children,
+}: {
+  open: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const reduceMotion = useReducedMotion();
+  const heightTransition = reduceMotion ? { duration: 0 } : collapseHeightTransition;
+  const contentTransition = reduceMotion ? { duration: 0 } : collapseContentTransition;
+
+  return (
+    <AnimatePresence initial={false}>
+      {open ? (
+        <motion.div
+          className={cn("overflow-hidden", className)}
+          initial={{ height: 0 }}
+          animate={{ height: "auto" }}
+          exit={{ height: 0 }}
+          transition={heightTransition}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: -3 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -2 }}
+            transition={contentTransition}
+          >
+            {children}
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 export function PresenceBadge({
   active,
+  tone = "neutral",
+  className,
   children,
 }: {
   active: boolean;
+  tone?: "neutral" | "success" | "protocol";
+  className?: string;
   children: React.ReactNode;
 }) {
+  const toneClass = {
+    neutral: "",
+    success: "border-status-success/20 bg-status-success/10 text-status-success",
+    protocol: "border-brand/20 bg-brand/10 text-brand",
+  }[tone];
+
   return (
-    <Badge variant={active ? "secondary" : "outline"} className="h-5 rounded text-[11px]">
+    <Badge
+      variant={active ? "secondary" : "outline"}
+      className={cn("h-5 rounded text-[11px]", active && toneClass, className)}
+    >
       {children}
     </Badge>
   );

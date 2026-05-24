@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
+  Archive,
   ChevronDown,
   Clock3,
   Columns3,
@@ -9,6 +10,7 @@ import {
   Filter,
   FolderKanban,
   FolderTree,
+  GitBranch,
   List,
   ListTodo,
   Search,
@@ -18,6 +20,7 @@ import { useTranslations } from "next-intl";
 import type {
   DashboardData,
   NormalizedChange,
+  NormalizedChangeLifecycle,
   NormalizedScopedChange,
   NormalizedSpec,
 } from "@/lib/dashboard-types";
@@ -34,7 +37,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { paths } from "@/lib/routes";
-import { EmptyRows, PresenceBadge, relativeOpenSpecPath } from "../shared";
+import {
+  EmptyRows,
+  HoverExpandFrame,
+  MotionCollapse,
+  PresenceBadge,
+  relativeOpenSpecPath,
+} from "../shared";
 
 type BoardMode = "board" | "list";
 type WorkboardSortMode = "createdAt" | "updatedAt" | "name";
@@ -45,6 +54,18 @@ type WorkboardColumn = {
   project: DashboardData["projects"][number];
   items: WorkboardItem[];
 };
+
+type WorkboardRow = {
+  key: string;
+  project: DashboardData["projects"][number];
+  item: WorkboardItem;
+};
+
+type ChangeWorkboardRow = WorkboardRow & {
+  item: NormalizedChange;
+};
+
+const changeLifecycles: NormalizedChangeLifecycle[] = ["active", "archived"];
 
 export function WorkboardSection({
   data,
@@ -233,34 +254,127 @@ function WorkboardBoard({
 }) {
   const t = useTranslations("workboard");
   const Icon = kind === "specs" ? FileText : ListTodo;
-  const items = columns.flatMap((column) =>
-    column.items.map((item) => ({
-      key: `${column.project.project.path}:${item.id}`,
-      project: column.project,
-      item,
-    })),
-  );
+  const items = workboardRows(columns);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<NormalizedChangeLifecycle, boolean>>({
+    active: false,
+    archived: false,
+  });
 
   if (items.length === 0) {
     return <EmptyRows icon={Icon} label={kind === "specs" ? t("noSpecsFound") : t("noChangesFound")} />;
   }
 
+  if (kind === "changes") {
+    const changeRows = changeWorkboardRows(items);
+
+    return (
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="mx-auto w-full space-y-4">
+          {changeLifecycles.map((lifecycle) => (
+            <ChangeLifecycleBoardGroup
+              key={lifecycle}
+              lifecycle={lifecycle}
+              rows={changeRows.filter((row) => row.item.lifecycle === lifecycle)}
+              collapsed={collapsedGroups[lifecycle]}
+              showMetadata={showMetadata}
+              onToggle={() =>
+                setCollapsedGroups((current) => ({
+                  ...current,
+                  [lifecycle]: !current[lifecycle],
+                }))
+              }
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-4">
       <div className="mx-auto w-full space-y-2">
-        {items.map(({ key, project, item }) =>
-          kind === "specs" ? (
-            <SpecCard key={key} spec={item as NormalizedSpec} showMetadata={showMetadata} />
-          ) : (
-            <ChangeCard
-              key={key}
-              change={item as NormalizedChange}
-              showMetadata={showMetadata}
-              showScopeProgress={project.scopes.length > 1}
-            />
-          ),
-        )}
+        {items.map(({ key, item }) => (
+          <SpecCard key={key} spec={item as NormalizedSpec} showMetadata={showMetadata} />
+        ))}
       </div>
+    </div>
+  );
+}
+
+function ChangeLifecycleBoardGroup({
+  lifecycle,
+  rows,
+  collapsed,
+  showMetadata,
+  onToggle,
+}: {
+  lifecycle: NormalizedChangeLifecycle;
+  rows: ChangeWorkboardRow[];
+  collapsed: boolean;
+  showMetadata: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <section className="space-y-2">
+      <ChangeLifecycleHeader lifecycle={lifecycle} count={rows.length} collapsed={collapsed} onToggle={onToggle} />
+      <MotionCollapse open={!collapsed}>
+        {rows.length > 0 ? (
+          <div className="space-y-2">
+            {rows.map(({ key, item }) => (
+              <ChangeCard
+                key={key}
+                change={item}
+                showMetadata={showMetadata}
+                showScopeProgress={(item.scopedChanges?.length ?? 0) > 1}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyLifecycleGroup lifecycle={lifecycle} />
+        )}
+      </MotionCollapse>
+    </section>
+  );
+}
+
+function ChangeLifecycleHeader({
+  lifecycle,
+  count,
+  collapsed,
+  onToggle,
+}: {
+  lifecycle: NormalizedChangeLifecycle;
+  count: number;
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
+  const t = useTranslations("workboard.groups");
+  const Icon = lifecycle === "active" ? ListTodo : Archive;
+
+  return (
+    <button
+      type="button"
+      className="flex h-9 w-full items-center justify-between gap-3 border-b px-1 text-left text-xs font-medium text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+      onClick={onToggle}
+    >
+      <span className="inline-flex min-w-0 items-center gap-2">
+        <Icon className="size-3.5 shrink-0" />
+        <span className="truncate">{t(lifecycle)}</span>
+        <Badge variant="secondary" className="h-5 shrink-0 rounded px-1.5 text-[10px] tabular-nums">
+          {count}
+        </Badge>
+      </span>
+      <ChevronDown className={`size-3.5 shrink-0 transition-transform ${collapsed ? "-rotate-90" : ""}`} />
+    </button>
+  );
+}
+
+function EmptyLifecycleGroup({ lifecycle }: { lifecycle: NormalizedChangeLifecycle }) {
+  const t = useTranslations("workboard.groupsEmpty");
+
+  return (
+    <div className="rounded-lg border border-dashed bg-muted/20 px-3 py-4 text-xs text-muted-foreground">
+      {t(lifecycle)}
     </div>
   );
 }
@@ -323,16 +437,28 @@ function SpecCard({
       {showMetadata ? (
         <div className="mt-2 flex items-center gap-1.5">
           {spec.projectName ? (
-            <span className="inline-flex max-w-[160px] items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 text-[11px] text-muted-foreground">
-              <FolderKanban className="size-3" />
-              <span className="truncate">{spec.projectName}</span>
-            </span>
+            <HoverExpandFrame compactWidth={160} expandedWidth={280} title={spec.projectName}>
+              <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                <FolderKanban className="size-3 shrink-0" />
+                <span className="truncate">{spec.projectName}</span>
+              </span>
+            </HoverExpandFrame>
           ) : null}
           {spec.scopeLabel && spec.scopeLabel !== "root" ? (
-            <span className="inline-flex max-w-[120px] items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 text-[11px] text-muted-foreground">
-              <FolderTree className="size-3" />
-              <span className="truncate">{spec.scopeLabel}</span>
-            </span>
+            <HoverExpandFrame compactWidth={120} expandedWidth={240} title={spec.scopeLabel}>
+              <span className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full bg-muted/60 px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                <FolderTree className="size-3 shrink-0" />
+                <span className="truncate">{spec.scopeLabel}</span>
+              </span>
+            </HoverExpandFrame>
+          ) : null}
+          {spec.checkoutKind === "worktree" && spec.checkoutLabel ? (
+            <HoverExpandFrame compactWidth={140} expandedWidth={260} title={spec.checkoutLabel}>
+              <PresenceBadge active tone="success" className="max-w-full min-w-0">
+                <GitBranch className="size-3" />
+                <span className="truncate">{spec.checkoutLabel}</span>
+              </PresenceBadge>
+            </HoverExpandFrame>
           ) : null}
           <span className="ml-auto truncate text-[11px] text-muted-foreground">
             {relativeOpenSpecPath(spec.sourcePath)}
@@ -393,12 +519,22 @@ function ChangeCard({
             )}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <PresenceBadge active={change.hasProposal}>{t("badges.proposal")}</PresenceBadge>
-            <PresenceBadge active={change.hasDesign}>{t("badges.design")}</PresenceBadge>
-            <PresenceBadge active={change.hasTasks}>{t("badges.tasks")}</PresenceBadge>
             {change.scopedChanges && change.scopedChanges.length > 1 ? (
               <PresenceBadge active>{t("badges.scopes", { count: change.scopedChanges.length })}</PresenceBadge>
             ) : null}
+            {change.checkoutSources?.filter((source) => source.checkoutKind === "worktree").map((source) => (
+              <HoverExpandFrame
+                key={source.checkoutId}
+                compactWidth={140}
+                expandedWidth={260}
+                title={source.checkoutLabel}
+              >
+                <PresenceBadge active tone="success" className="max-w-full min-w-0">
+                  <GitBranch className="size-3" />
+                  <span className="truncate">{source.checkoutLabel}</span>
+                </PresenceBadge>
+              </HoverExpandFrame>
+            ))}
             <span className="ml-auto text-[11px] text-muted-foreground">
               {t("requirementsShort", { count: change.requirementCount })}
             </span>
@@ -413,7 +549,7 @@ function ChangeCard({
   }
 
   return (
-    <AppLink href={paths.changeDetail(change.projectId, change.id)} className="block">
+    <AppLink href={paths.changeDetail(change.projectId, change.id, change.lifecycle)} className="block">
       {content}
     </AppLink>
   );
@@ -429,53 +565,145 @@ function WorkboardList({
   showMetadata: boolean;
 }) {
   const t = useTranslations("workboard");
-  const rows = columns.flatMap((column) =>
-    column.items.map((item) => ({
-      project: column.project,
-      item,
-    })),
-  );
+  const rows = workboardRows(columns);
   const Icon = kind === "specs" ? FileText : ListTodo;
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<NormalizedChangeLifecycle, boolean>>({
+    active: false,
+    archived: false,
+  });
 
   if (rows.length === 0) {
     return <EmptyRows icon={Icon} label={kind === "specs" ? t("noSpecsFound") : t("noChangesFound")} />;
   }
 
+  if (kind === "changes") {
+    const changeRows = changeWorkboardRows(rows);
+
+    return (
+      <div className="divide-y">
+        {changeLifecycles.map((lifecycle) => (
+          <ChangeLifecycleListGroup
+            key={lifecycle}
+            lifecycle={lifecycle}
+            rows={changeRows.filter((row) => row.item.lifecycle === lifecycle)}
+            collapsed={collapsedGroups[lifecycle]}
+            showMetadata={showMetadata}
+            onToggle={() =>
+              setCollapsedGroups((current) => ({
+                ...current,
+                [lifecycle]: !current[lifecycle],
+              }))
+            }
+          />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="divide-y">
       {rows.map(({ project, item }) => {
-        const content = (
-          <div className="flex min-h-12 items-center gap-3 px-4 py-2 transition-colors hover:bg-accent/50">
-            <Icon className="size-4 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{item.title}</p>
-              <p className="truncate text-xs text-muted-foreground">{item.id}</p>
-            </div>
-            {showMetadata ? (
-              <span className="hidden max-w-44 truncate text-xs text-muted-foreground md:inline">
-                {project.project.name}
-              </span>
-            ) : null}
-            <span className="shrink-0 text-xs text-muted-foreground">
-              {kind === "specs"
-                ? t("requirementsShort", { count: (item as NormalizedSpec).requirementCount })
-                : `${(item as NormalizedChange).taskSummary.completed}/${(item as NormalizedChange).taskSummary.total}`}
-            </span>
-          </div>
-        );
-
-        const href =
-          kind === "specs"
-            ? paths.specDetail(project.project.id, item.id)
-            : paths.changeDetail(project.project.id, item.id);
-
         return (
-          <AppLink key={`${project.project.path}:${item.id}`} href={href} className="block">
-            {content}
-          </AppLink>
+          <WorkboardListRow
+            key={workboardItemKey(project, item)}
+            kind={kind}
+            project={project}
+            item={item}
+            showMetadata={showMetadata}
+          />
         );
       })}
     </div>
+  );
+}
+
+function ChangeLifecycleListGroup({
+  lifecycle,
+  rows,
+  collapsed,
+  showMetadata,
+  onToggle,
+}: {
+  lifecycle: NormalizedChangeLifecycle;
+  rows: ChangeWorkboardRow[];
+  collapsed: boolean;
+  showMetadata: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <section>
+      <div className="px-4">
+        <ChangeLifecycleHeader lifecycle={lifecycle} count={rows.length} collapsed={collapsed} onToggle={onToggle} />
+      </div>
+      <MotionCollapse open={!collapsed}>
+        {rows.length > 0 ? (
+          <div className="divide-y">
+            {rows.map(({ key, project, item }) => (
+              <WorkboardListRow
+                key={key}
+                kind="changes"
+                project={project}
+                item={item}
+                showMetadata={showMetadata}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="px-4 py-2">
+            <EmptyLifecycleGroup lifecycle={lifecycle} />
+          </div>
+        )}
+      </MotionCollapse>
+    </section>
+  );
+}
+
+function WorkboardListRow({
+  kind,
+  project,
+  item,
+  showMetadata,
+}: {
+  kind: WorkboardKind;
+  project: DashboardData["projects"][number];
+  item: WorkboardItem;
+  showMetadata: boolean;
+}) {
+  const t = useTranslations("workboard");
+  const Icon = kind === "specs" ? FileText : ListTodo;
+  const href =
+    kind === "specs"
+      ? paths.specDetail(project.project.id, item.id)
+      : paths.changeDetail(
+          project.project.id,
+          item.id,
+          (item as NormalizedChange).lifecycle,
+        );
+  const metric =
+    kind === "specs"
+      ? t("requirementsShort", { count: (item as NormalizedSpec).requirementCount })
+      : `${(item as NormalizedChange).taskSummary.completed}/${(item as NormalizedChange).taskSummary.total}`;
+
+  const content = (
+    <div className="flex min-h-12 items-center gap-3 px-4 py-2 transition-colors hover:bg-accent/50">
+      <Icon className="size-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{item.title}</p>
+        <p className="truncate text-xs text-muted-foreground">{item.id}</p>
+      </div>
+      {showMetadata ? (
+        <span className="hidden max-w-44 truncate text-xs text-muted-foreground md:inline">
+          {project.project.name}
+        </span>
+      ) : null}
+      <span className="shrink-0 text-xs text-muted-foreground">{metric}</span>
+    </div>
+  );
+
+  return (
+    <AppLink href={href} className="block">
+      {content}
+    </AppLink>
   );
 }
 
@@ -532,9 +760,32 @@ function workboardItemMatches(item: WorkboardItem, query: string) {
     item.title,
     item.projectName,
     item.scopeLabel,
+    "lifecycle" in item ? item.lifecycle : undefined,
     "displayId" in item ? item.displayId : undefined,
     "sourcePath" in item ? item.sourcePath : undefined,
   ]
     .filter(Boolean)
     .some((value) => String(value).toLowerCase().includes(query));
+}
+
+function workboardRows(columns: WorkboardColumn[]): WorkboardRow[] {
+  return columns.flatMap((column) =>
+    column.items.map((item) => ({
+      key: workboardItemKey(column.project, item),
+      project: column.project,
+      item,
+    })),
+  );
+}
+
+function workboardItemKey(
+  project: DashboardData["projects"][number],
+  item: WorkboardItem,
+): string {
+  const lifecycle = "lifecycle" in item ? item.lifecycle : "spec";
+  return `${project.project.path}:${lifecycle}:${item.id}`;
+}
+
+function changeWorkboardRows(rows: WorkboardRow[]): ChangeWorkboardRow[] {
+  return rows.filter((row): row is ChangeWorkboardRow => "lifecycle" in row.item);
 }

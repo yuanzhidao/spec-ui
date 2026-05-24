@@ -52,14 +52,55 @@ export async function relocateProject(
   });
 }
 
+export async function updateProjectWorktreesDirectory(
+  projectId: string,
+  path: string | null,
+): Promise<RuntimeSnapshot> {
+  return runtimeRequest<RuntimeSnapshot>(
+    `/api/projects/${encodeURIComponent(projectId)}/worktrees-directory`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ path }),
+    },
+  );
+}
+
+export async function addProjectWorktreePath(
+  projectId: string,
+  path: string,
+): Promise<RuntimeSnapshot> {
+  return runtimeRequest<RuntimeSnapshot>(
+    `/api/projects/${encodeURIComponent(projectId)}/worktrees`,
+    {
+      method: "POST",
+      body: JSON.stringify({ path }),
+    },
+  );
+}
+
+export async function removeProjectWorktreePath(
+  projectId: string,
+  path: string,
+): Promise<RuntimeSnapshot> {
+  return runtimeRequest<RuntimeSnapshot>(
+    `/api/projects/${encodeURIComponent(projectId)}/worktrees/${encodeURIComponent(path)}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
 export async function clearProjects(): Promise<RuntimeSnapshot> {
   return runtimeRequest<RuntimeSnapshot>("/api/projects", {
     method: "DELETE",
   });
 }
 
-export async function refreshProject(): Promise<RuntimeSnapshot> {
-  return runtimeRequest<RuntimeSnapshot>("/api/project/refresh", {
+export async function refreshProject(projectId?: string): Promise<RuntimeSnapshot> {
+  const path = projectId
+    ? `/api/projects/${encodeURIComponent(projectId)}/refresh`
+    : "/api/project/refresh";
+  return runtimeRequest<RuntimeSnapshot>(path, {
     method: "POST",
   });
 }

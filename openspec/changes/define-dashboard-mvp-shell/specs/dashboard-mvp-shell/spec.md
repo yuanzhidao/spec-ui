@@ -65,7 +65,7 @@ The system SHALL provide a Validation section with explicit validation status an
 - **THEN** the Validation section indicates that the current result is stale
 
 ### Requirement: Project data sections
-The system SHALL render MVP sections for specs, active changes, validation, activity, and settings using normalized multi-project data.
+The system SHALL render MVP sections for specs, changes, validation, activity, and settings using normalized multi-project data.
 
 #### Scenario: Default Specs section opens
 - **WHEN** the app opens with one or more added projects
@@ -77,15 +77,19 @@ The system SHALL render MVP sections for specs, active changes, validation, acti
 
 #### Scenario: User opens Changes section
 - **WHEN** the user opens the Changes navigation item without a focused project filter
-- **THEN** the system displays active changes across all added projects in the same workboard style used by Specs
+- **THEN** the system displays Changes across all added projects in the same workboard style used by Specs, grouped into collapsible Active and Archive sections
 
 #### Scenario: User opens focused project Changes
 - **WHEN** the user opens Changes with a focused project selected
-- **THEN** the system displays active changes for that project in the same workboard style or an empty state when no active changes exist
+- **THEN** the system displays Changes for that project grouped into collapsible Active and Archive sections or an empty state when no changes exist
+
+#### Scenario: Change lifecycle groups collapse with motion
+- **WHEN** the user expands or collapses a Change lifecycle group
+- **THEN** the group body animates open or closed with a restrained motion transition while preserving reduced-motion preferences
 
 #### Scenario: User opens a Change detail
 - **WHEN** the user activates a Change card from the Changes workboard
-- **THEN** the URL updates to a project-scoped Change detail route with the persistent random project ID and the shell displays that Change while preserving the Changes navigation context
+- **THEN** the URL updates to a project-scoped Change detail route with the persistent random project ID, Change ID, and lifecycle when needed, and the shell displays that Change while preserving the Changes navigation context
 
 #### Scenario: Change detail renders
 - **WHEN** a Change detail is available
@@ -154,7 +158,7 @@ All Projects views SHALL remain single-column card streams. Focused project view
 
 #### Scenario: Focused project changes render with multiple scopes
 - **WHEN** the Changes section renders for a focused project with multiple detected scopes
-- **THEN** the workboard displays one full-width aggregated Change card per Change ID
+- **THEN** the workboard displays one full-width aggregated Change card per lifecycle and Change ID inside the matching lifecycle group
 
 #### Scenario: Scoped Change card renders progress
 - **WHEN** an aggregated Change card has scoped child Changes
@@ -210,6 +214,10 @@ The system SHALL render Specs as the primary operational surface, using a full-w
 #### Scenario: Spec card renders
 - **WHEN** a spec appears in the Specs workboard
 - **THEN** its full-width card shows the spec identity, project context or scope context when useful, requirement count, and concise metadata without relying on large metric tiles
+
+#### Scenario: Fixed-width metadata expands on hover
+- **WHEN** a compact metadata label such as a project, scope, worktree, or checkout tag is truncated
+- **THEN** the label uses a motion hover expansion to reveal more content while keeping the surrounding card layout stable
 
 #### Scenario: Board controls render
 - **WHEN** the Specs workboard is visible

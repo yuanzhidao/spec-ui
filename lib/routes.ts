@@ -1,3 +1,5 @@
+import type { NormalizedChangeLifecycle } from "@/lib/dashboard-types";
+
 export const dashboardSectionIds = [
   "specs",
   "changes",
@@ -21,6 +23,13 @@ export function sectionFromPathname(pathname: string): DashboardSection {
   return isDashboardSection(firstSegment) ? firstSegment : "specs";
 }
 
+export function normalizeChangeLifecycle(
+  value: string | string[] | undefined,
+): NormalizedChangeLifecycle {
+  const lifecycle = Array.isArray(value) ? value[0] : value;
+  return lifecycle === "archived" ? "archived" : "active";
+}
+
 export const paths = {
   root: () => "/",
   section: (section: DashboardSection) => `/${section}`,
@@ -28,8 +37,14 @@ export const paths = {
   specDetail: (projectId: string, specId: string) =>
     `/specs/${encode(projectId)}/${encode(specId)}`,
   changes: () => "/changes",
-  changeDetail: (projectId: string, changeId: string) =>
-    `/changes/${encode(projectId)}/${encode(changeId)}`,
+  changeDetail: (
+    projectId: string,
+    changeId: string,
+    lifecycle: NormalizedChangeLifecycle = "active",
+  ) => {
+    const base = `/changes/${encode(projectId)}/${encode(changeId)}`;
+    return lifecycle === "active" ? base : `${base}?lifecycle=${encode(lifecycle)}`;
+  },
   projects: () => "/projects",
   activity: () => "/activity",
   validation: () => "/validation",

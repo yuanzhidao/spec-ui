@@ -73,8 +73,16 @@
     "noSpecs": "暂无 specs",
     "noActiveChanges": "暂无 active changes",
     "noSpecsFound": "没有找到 specs。",
-    "noChangesFound": "没有找到 active changes。",
+    "noChangesFound": "没有找到 changes。",
     "requirementsShort": "{count} reqs",
+    "groups": {
+      "active": "Active",
+      "archived": "Archive"
+    },
+    "groupsEmpty": {
+      "active": "暂无 active changes。",
+      "archived": "暂无 archived changes。"
+    },
     "sort": {
       "title": "排序",
       "createdAt": "创建时间",
@@ -83,9 +91,6 @@
       "active": "当前"
     },
     "badges": {
-      "proposal": "proposal",
-      "design": "design",
-      "tasks": "tasks",
       "scopes": "{count} 个 scope"
     }
   },
@@ -104,11 +109,15 @@
     "scopes": "{count} 个 scope",
     "specs": "{count} specs",
     "changes": "{count} changes",
+    "checkouts": "{count} 个 checkout",
     "events": "活动",
     "metrics": {
       "scopes": "Scopes",
       "specs": "Specs",
       "active": "Active"
+    },
+    "dialects": {
+      "openspec": "OpenSpec"
     },
     "actions": {
       "showAll": "显示所有项目",
@@ -126,6 +135,17 @@
       "title": "项目设置",
       "description": "更新本地目录，同时保留这个项目身份。",
       "localDirectory": "本地目录",
+      "worktreesDirectory": "Worktrees 目录",
+      "worktreesPlaceholder": "~/workspace/project-worktrees",
+      "worktreesDescription": "只扫描一级子目录；属于同一 git 仓库的目录会作为 worktree。",
+      "checkouts": "Checkouts",
+      "checkoutCount": "{count} 个 checkout",
+      "orphanWorktree": "孤立 worktree",
+      "orphanPlaceholder": "~/workspace/feature-worktree",
+      "addWorktree": "添加",
+      "removeWorktree": "移除",
+      "clear": "清空",
+      "refresh": "刷新",
       "cancel": "取消",
       "save": "保存"
     }

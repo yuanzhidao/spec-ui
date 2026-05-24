@@ -73,9 +73,17 @@
     "noSpecs": "No specs",
     "noActiveChanges": "No active changes",
     "noSpecsFound": "No specs found.",
-    "noChangesFound": "No active changes found.",
-    "requirementsShort": "{count} reqs"
-    ,"sort": {
+    "noChangesFound": "No changes found.",
+    "requirementsShort": "{count} reqs",
+    "groups": {
+      "active": "Active",
+      "archived": "Archive"
+    },
+    "groupsEmpty": {
+      "active": "No active changes.",
+      "archived": "No archived changes."
+    },
+    "sort": {
       "title": "Sort",
       "createdAt": "Created time",
       "updatedAt": "Modified time",
@@ -83,9 +91,6 @@
       "active": "Active"
     },
     "badges": {
-      "proposal": "proposal",
-      "design": "design",
-      "tasks": "tasks",
       "scopes": "{count} scopes"
     }
   },
@@ -104,11 +109,15 @@
     "scopes": "{count} scopes",
     "specs": "{count} specs",
     "changes": "{count} changes",
+    "checkouts": "{count} checkouts",
     "events": "Events",
     "metrics": {
       "scopes": "Scopes",
       "specs": "Specs",
       "active": "Active"
+    },
+    "dialects": {
+      "openspec": "OpenSpec"
     },
     "actions": {
       "showAll": "Show all projects",
@@ -124,8 +133,19 @@
     "settings": {
       "aria": "Project settings",
       "title": "Project settings",
-      "description": "Update the local directory while keeping this project identity.",
+      "description": "Update local directories while keeping this project identity.",
       "localDirectory": "Local directory",
+      "worktreesDirectory": "Worktrees directory",
+      "worktreesPlaceholder": "~/workspace/project-worktrees",
+      "worktreesDescription": "Direct child directories are scanned as worktrees when they belong to the same git repository.",
+      "checkouts": "Checkouts",
+      "checkoutCount": "{count, plural, =1 {# checkout detected} other {# checkouts detected}}",
+      "orphanWorktree": "Orphan worktree",
+      "orphanPlaceholder": "~/workspace/feature-worktree",
+      "addWorktree": "Add",
+      "removeWorktree": "Remove",
+      "clear": "Clear",
+      "refresh": "Refresh",
       "cancel": "Cancel",
       "save": "Save"
     }

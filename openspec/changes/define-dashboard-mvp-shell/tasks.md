@@ -108,6 +108,10 @@
 - [x] 7.39 Move project management ownership out of Settings so add, remove, relocate, and focus controls live on the Projects section.
 - [x] 7.40 Require MVP dashboard copy to use the i18n message layer with English and Chinese coverage.
 - [x] 7.41 Split dashboard section implementation into focused feature directories instead of one oversized component file.
+- [x] 7.42 Render archived OpenSpec changes in collapsible Archive sections separate from active Changes.
+- [x] 7.43 Add motion hover expansion for compact metadata tags that would otherwise truncate.
+- [x] 7.44 Disambiguate archived Change detail routes by lifecycle when Change IDs overlap.
+- [x] 7.45 Add motion transitions to Change lifecycle group expand and collapse behavior.
 
 ## 8. Verification
 

@@ -58,6 +58,7 @@ export function normalizeWatcherEvent(
   const relativePath = path.relative(binding.path, filePath);
   const normalized = relativePath.split(path.sep).join("/");
   const scope = scopeForRelativePath(binding, normalized);
+  const checkout = binding.checkouts[0];
 
   if (!scope) {
     const discoveredScope = scopeFromOpenSpecDirectory(normalized);
@@ -68,6 +69,7 @@ export function normalizeWatcherEvent(
         eventType,
         filePath,
         timestamp: new Date().toISOString(),
+        ...checkoutEventFields(checkout),
         scopeId: discoveredScope.id,
         scopeLabel: discoveredScope.label,
         scopePath: discoveredScope.path,
@@ -88,10 +90,25 @@ export function normalizeWatcherEvent(
     eventType,
     filePath,
     timestamp: new Date().toISOString(),
+    ...checkoutEventFields(checkout),
     entityId: entityIdFromPath(scopedPath),
     scopeId: scope.id,
     scopeLabel: scope.label,
     scopePath: scope.path,
+  };
+}
+
+function checkoutEventFields(checkout: ProjectBinding["checkouts"][number] | undefined) {
+  if (!checkout) {
+    return {};
+  }
+
+  return {
+    checkoutId: checkout.id,
+    checkoutKind: checkout.kind,
+    checkoutPath: checkout.path,
+    checkoutLabel: checkout.label,
+    checkoutBranch: checkout.branch,
   };
 }
 

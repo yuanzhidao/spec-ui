@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import type { ProjectBinding, ValidationResult } from "@/lib/dashboard-types";
+import type { ProjectBinding, SpecScope, ValidationResult } from "@/lib/dashboard-types";
 
 export function notRunValidation(): ValidationResult {
   return { status: "not-run" };
@@ -17,7 +17,8 @@ export function staleValidation(previous: ValidationResult): ValidationResult {
 export async function runProjectValidation(
   binding: ProjectBinding,
 ): Promise<ValidationResult> {
-  if (binding.dialect !== "openspec") {
+  const targets = validationTargetsForProject(binding);
+  if (targets.length === 0) {
     return {
       status: "failing",
       message: "Validation is only implemented for OpenSpec projects in the MVP.",
@@ -27,20 +28,14 @@ export async function runProjectValidation(
     };
   }
 
-  const scopes = binding.discovery.scopes.length
-    ? binding.discovery.scopes
-    : [{ id: "root", label: "root", path: "" }];
-  const command =
-    scopes.length > 1
-      ? `openspec validate --all (${scopes.length} scopes)`
-      : "openspec validate --all";
+  const command = targets.length > 1
+    ? `openspec validate --all (${targets.length} targets)`
+    : "openspec validate --all";
   const startedAt = new Date().toISOString();
   const results = await Promise.all(
-    scopes.map(async (scope) => ({
-      scope,
-      result: await runOpenSpecValidation(
-        scope.path ? path.join(binding.path, scope.path) : binding.path,
-      ),
+    targets.map(async (target) => ({
+      target,
+      result: await runOpenSpecValidation(target.cwd),
     })),
   );
   const failing = results.find((item) => item.result.exitCode !== 0);
@@ -49,11 +44,11 @@ export async function runProjectValidation(
     status: failing ? "failing" : "passing",
     command,
     stdout: results
-      .map(({ scope, result }) => formatScopeOutput(scope.label, result.stdout))
+      .map(({ target, result }) => formatTargetOutput(target.label, result.stdout))
       .filter(Boolean)
       .join("\n"),
     stderr: results
-      .map(({ scope, result }) => formatScopeOutput(scope.label, result.stderr))
+      .map(({ target, result }) => formatTargetOutput(target.label, result.stderr))
       .filter(Boolean)
       .join("\n"),
     exitCode: failing?.result.exitCode ?? 0,
@@ -61,6 +56,39 @@ export async function runProjectValidation(
     endedAt: new Date().toISOString(),
     message: results.find((item) => item.result.message)?.result.message,
   };
+}
+
+export type ValidationTarget = {
+  label: string;
+  cwd: string;
+};
+
+export function validationTargetsForProject(binding: ProjectBinding): ValidationTarget[] {
+  const checkouts = binding.checkouts.length > 0
+    ? binding.checkouts
+    : [{
+        id: "primary",
+        kind: "primary" as const,
+        source: "primary" as const,
+        path: binding.path,
+        label: binding.name,
+        dialect: binding.dialect,
+        discovery: binding.discovery,
+      }];
+  const openSpecCheckouts = checkouts.filter((checkout) => checkout.dialect === "openspec");
+  const multipleCheckouts = openSpecCheckouts.length > 1;
+
+  return openSpecCheckouts.flatMap((checkout) => {
+    const scopes = checkout.discovery.scopes.length
+      ? checkout.discovery.scopes
+      : [{ id: "root", label: "root", path: "" }];
+    const multipleScopes = scopes.length > 1;
+
+    return scopes.map((scope) => ({
+      label: validationTargetLabel(checkout.label, scope, multipleCheckouts, multipleScopes),
+      cwd: scope.path ? path.join(checkout.path, scope.path) : checkout.path,
+    }));
+  });
 }
 
 function runOpenSpecValidation(cwd: string): Promise<{
@@ -105,7 +133,22 @@ function runOpenSpecValidation(cwd: string): Promise<{
   });
 }
 
-function formatScopeOutput(scopeLabel: string, output: string): string {
+function validationTargetLabel(
+  checkoutLabel: string,
+  scope: SpecScope,
+  multipleCheckouts: boolean,
+  multipleScopes: boolean,
+): string {
+  if (multipleCheckouts && multipleScopes) {
+    return `${checkoutLabel} / ${scope.label}`;
+  }
+  if (multipleCheckouts) {
+    return checkoutLabel;
+  }
+  return scope.label;
+}
+
+function formatTargetOutput(label: string, output: string): string {
   const trimmed = output.trim();
-  return trimmed ? `[${scopeLabel}]\n${trimmed}` : "";
+  return trimmed ? `[${label}]\n${trimmed}` : "";
 }

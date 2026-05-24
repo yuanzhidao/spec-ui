@@ -4,6 +4,7 @@ import type {
   NormalizedChange,
   NormalizedChangeDeltaSpec,
   NormalizedChangeFile,
+  NormalizedChangeLifecycle,
   NormalizedScopedChange,
   NormalizedChangeTask,
   NormalizedRequirement,
@@ -41,6 +42,7 @@ export const openSpecAdapter: SpecDialectAdapter = {
     return {
       project: binding,
       validation: context.validation,
+      checkouts: binding.checkouts,
       scopes,
       specs: specs.map(toSpec),
       changes,
@@ -125,6 +127,7 @@ function toScopedChange(change: ChangeWithRequirements): NormalizedScopedChange 
     id: change.id,
     title: change.title,
     sourcePath: change.sourcePath,
+    lifecycle: change.lifecycle,
     createdAt: change.createdAt,
     updatedAt: change.updatedAt,
     scopeId: change.scopeId || "root",
@@ -144,11 +147,27 @@ async function readChanges(
   scope: SpecScope,
 ): Promise<ChangeWithRequirements[]> {
   const changesDir = path.join(openspecPath, "changes");
-  const entries = await safeDirectoryEntries(changesDir);
+  const entries = (await safeDirectoryEntries(changesDir))
+    .filter((entry) => entry.name !== "archive");
+  const archivedEntries = await safeDirectoryEntries(path.join(changesDir, "archive"));
 
+  const [activeChanges, archivedChanges] = await Promise.all([
+    readChangeEntries(changesDir, entries, scope, "active"),
+    readChangeEntries(path.join(changesDir, "archive"), archivedEntries, scope, "archived"),
+  ]);
+
+  return [...activeChanges, ...archivedChanges];
+}
+
+async function readChangeEntries(
+  root: string,
+  entries: Awaited<ReturnType<typeof safeDirectoryEntries>>,
+  scope: SpecScope,
+  lifecycle: NormalizedChangeLifecycle,
+): Promise<ChangeWithRequirements[]> {
   const changes = await Promise.all(
     entries.map(async (entry) => {
-      const changePath = path.join(changesDir, entry.name);
+      const changePath = path.join(root, entry.name);
       const [proposal, design, tasks, specRequirements, timestamps, deltaSpecs, files] = await Promise.all([
         readOptionalFile(path.join(changePath, "proposal.md")),
         readOptionalFile(path.join(changePath, "design.md")),
@@ -166,6 +185,7 @@ async function readChanges(
         id: entry.name,
         title: firstHeading(proposalContent || design || tasks || "") || entry.name,
         sourcePath: changePath,
+        lifecycle,
         createdAt: timestamps.createdAt,
         updatedAt: timestamps.updatedAt,
         scopeId: scope.id,
@@ -201,7 +221,8 @@ async function readChanges(
 function aggregateScopedChanges(changes: ChangeWithRequirements[]): NormalizedChange[] {
   const groups = new Map<string, ChangeWithRequirements[]>();
   for (const change of changes) {
-    groups.set(change.id, [...(groups.get(change.id) || []), change]);
+    const key = changeGroupKey(change);
+    groups.set(key, [...(groups.get(key) || []), change]);
   }
 
   return Array.from(groups.values()).map((group) => aggregateChangeGroup(group));
@@ -216,6 +237,7 @@ function aggregateChangeGroup(group: ChangeWithRequirements[]): NormalizedChange
     id: primary.id,
     title: primary.title,
     sourcePath: primary.sourcePath,
+    lifecycle: primary.lifecycle,
     createdAt: earliestTimestamp(sorted.map((change) => change.createdAt)),
     updatedAt: latestTimestamp(sorted.map((change) => change.updatedAt)),
     scopeId: sorted.length === 1 ? primary.scopeId : undefined,
@@ -232,6 +254,10 @@ function aggregateChangeGroup(group: ChangeWithRequirements[]): NormalizedChange
     detail: primary.detail,
     scopedChanges,
   };
+}
+
+function changeGroupKey(change: Pick<NormalizedChange, "id" | "lifecycle">): string {
+  return `${change.lifecycle}:${change.id}`;
 }
 
 function compareScopedChanges(first: ChangeWithRequirements, second: ChangeWithRequirements): number {

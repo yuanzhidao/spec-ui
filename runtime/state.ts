@@ -6,6 +6,7 @@ import type {
   DashboardProject,
   LanguageMode,
   ProjectBinding,
+  ProjectCheckout,
   ProjectEvent,
   RuntimeProjectSetting,
   RealtimeState,
@@ -16,15 +17,18 @@ import type {
   ValidationResult,
 } from "@/lib/dashboard-types";
 import { projectDashboardData } from "./adapters";
-import { discoverProject } from "./project";
+import { discoverProject, expandProjectPath } from "./project";
 import {
   addProjectPath,
+  addProjectWorktreePath,
   defaultSettings,
   projectSettingById,
   projectSettingByPath,
   readSettings,
   removeProjectPath,
+  removeProjectWorktreePath,
   updateProjectPath,
+  updateProjectWorktreesPath,
   withFocusedProjectId,
   withLanguage,
   withTheme,
@@ -32,6 +36,7 @@ import {
 } from "./settings";
 import { notRunValidation, runProjectValidation, staleValidation } from "./validation";
 import { ProjectWatcher } from "./watcher";
+import { discoverWorktreeCheckouts, primaryCheckoutFromBinding } from "./worktrees";
 
 type RuntimeSocket = WSContext<WebSocket>;
 
@@ -39,6 +44,11 @@ type ProjectRuntimeEntry = {
   binding: ProjectBinding;
   issue?: RuntimeIssue;
   validation: ValidationResult;
+  checkouts: CheckoutRuntimeEntry[];
+};
+
+type CheckoutRuntimeEntry = {
+  checkout: ProjectCheckout;
   activity: ProjectEvent[];
   watcher: ProjectWatcher;
   watcherState: RealtimeState["watcher"];
@@ -84,12 +94,13 @@ export class RuntimeState {
       return this.snapshot();
     }
 
-    const entry = this.createEntry(result.binding, result.issue);
     this.settings = addProjectPath(this.settings, result.binding.path);
     const projectSetting = projectSettingByPath(this.settings, result.binding.path);
-    if (projectSetting) {
-      entry.binding = { ...entry.binding, id: projectSetting.id };
-    }
+    const entry = await this.createEntry(
+      { ...result.binding, id: projectSetting?.id ?? result.binding.id },
+      result.issue,
+      projectSetting,
+    );
     await this.replaceEntry(entry);
     this.settingsIssue = undefined;
     await writeSettings(this.settings);
@@ -112,7 +123,7 @@ export class RuntimeState {
   async removeProject(projectPath: string): Promise<RuntimeSnapshot> {
     const entry = this.projects.get(projectPath);
     if (entry) {
-      await entry.watcher.stop();
+      await this.stopEntryWatchers(entry);
       this.projects.delete(projectPath);
     }
 
@@ -153,24 +164,97 @@ export class RuntimeState {
 
     const previous = this.projects.get(existingSetting.path);
     if (previous) {
-      await previous.watcher.stop();
+      await this.stopEntryWatchers(previous);
       this.projects.delete(existingSetting.path);
     }
 
-    const entry = this.createEntry(
+    this.settings = updateProjectPath(this.settings, projectId, result.binding.path);
+    const projectSetting = projectSettingById(this.settings, projectId);
+    const entry = await this.createEntry(
       { ...result.binding, id: projectId },
       result.issue,
+      projectSetting,
     );
     await this.replaceEntry(entry);
-    this.settings = updateProjectPath(this.settings, projectId, result.binding.path);
     this.settingsIssue = undefined;
     await writeSettings(this.settings);
     void this.broadcastSnapshot();
     return this.snapshot();
   }
 
+  async updateProjectWorktreesPath(
+    projectId: string,
+    worktreesPath: string | null,
+  ): Promise<RuntimeSnapshot> {
+    const setting = projectSettingById(this.settings, projectId);
+    if (!setting) {
+      this.settingsIssue = {
+        code: "missing-path",
+        message: "The project is not available.",
+      };
+      return this.snapshot();
+    }
+
+    this.settings = updateProjectWorktreesPath(
+      this.settings,
+      projectId,
+      worktreesPath ? normalizeUserPath(worktreesPath) : null,
+    );
+    await writeSettings(this.settings);
+    await this.reloadProject(projectId);
+    this.settingsIssue = undefined;
+    void this.broadcastSnapshot();
+    return this.snapshot();
+  }
+
+  async addProjectWorktreePath(
+    projectId: string,
+    worktreePath: string,
+  ): Promise<RuntimeSnapshot> {
+    const setting = projectSettingById(this.settings, projectId);
+    if (!setting) {
+      this.settingsIssue = {
+        code: "missing-path",
+        message: "The project is not available.",
+      };
+      return this.snapshot();
+    }
+
+    this.settings = addProjectWorktreePath(
+      this.settings,
+      projectId,
+      normalizeUserPath(worktreePath),
+    );
+    await writeSettings(this.settings);
+    await this.reloadProject(projectId);
+    this.settingsIssue = undefined;
+    void this.broadcastSnapshot();
+    return this.snapshot();
+  }
+
+  async removeProjectWorktreePath(
+    projectId: string,
+    worktreePath: string,
+  ): Promise<RuntimeSnapshot> {
+    const setting = projectSettingById(this.settings, projectId);
+    if (!setting) {
+      this.settingsIssue = {
+        code: "missing-path",
+        message: "The project is not available.",
+      };
+      return this.snapshot();
+    }
+
+    this.settings = removeProjectWorktreePath(this.settings, projectId, worktreePath);
+    await writeSettings(this.settings);
+    await this.reloadProject(projectId);
+    this.settingsIssue = undefined;
+    void this.broadcastSnapshot();
+    return this.snapshot();
+  }
+
   async clearProjects(): Promise<RuntimeSnapshot> {
-    await Promise.all(Array.from(this.projects.values()).map((entry) => entry.watcher.stop()));
+    await Promise.all(Array.from(this.projects.values()).map((entry) => this.stopEntryWatchers(entry)));
     this.projects.clear();
     this.settings = { ...this.settings, projects: [], focusedProjectId: null };
     await writeSettings(this.settings);
@@ -182,7 +266,15 @@ export class RuntimeState {
     return this.clearProjects();
   }
 
-  async refreshProject(): Promise<RuntimeSnapshot> {
+  async refreshProject(projectId?: string): Promise<RuntimeSnapshot> {
+    const targetProjectId = projectId || this.settings.focusedProjectId;
+    if (targetProjectId) {
+      await this.reloadProject(targetProjectId);
+    } else {
+      for (const project of this.settings.projects) {
+        await this.reloadProject(project.id);
+      }
+    }
     void this.broadcastSnapshot();
     return this.snapshot();
   }
@@ -234,40 +326,58 @@ export class RuntimeState {
   }
 
   private async restoreProjects(projects: RuntimeProjectSetting[]): Promise<void> {
-    await Promise.all(Array.from(this.projects.values()).map((entry) => entry.watcher.stop()));
+    await Promise.all(Array.from(this.projects.values()).map((entry) => this.stopEntryWatchers(entry)));
     this.projects.clear();
 
     for (const project of projects) {
       const result = await discoverProject(project.path);
       const entry = result.ok
-        ? this.createEntry({ ...result.binding, id: project.id }, result.issue)
-        : this.createEntry(invalidProjectBinding(project), result.issue);
+        ? await this.createEntry({ ...result.binding, id: project.id }, result.issue, project)
+        : await this.createEntry(invalidProjectBinding(project), result.issue, project);
       await this.replaceEntry(entry);
     }
   }
 
-  private createEntry(
+  private async createEntry(
     binding: ProjectBinding,
     issue?: RuntimeIssue,
-  ): ProjectRuntimeEntry {
+    setting?: RuntimeProjectSetting,
+    previous?: ProjectRuntimeEntry,
+  ): Promise<ProjectRuntimeEntry> {
+    const primaryCheckout = await primaryCheckoutFromBinding(binding);
+    const worktrees = setting
+      ? await discoverWorktreeCheckouts(setting, binding)
+      : { checkouts: [], issues: [] };
+    const checkouts = [primaryCheckout, ...worktrees.checkouts];
+    const projectBinding = {
+      ...binding,
+      worktreesPath: setting?.worktreesPath,
+      worktreePaths: setting?.worktreePaths || [],
+      checkouts,
+      worktreeIssues: worktrees.issues,
+    };
+
     return {
-      binding,
+      binding: projectBinding,
       issue,
-      validation: notRunValidation(),
-      activity: [],
-      watcher: new ProjectWatcher(),
-      watcherState: "idle",
+      validation: previous?.validation ?? notRunValidation(),
+      checkouts: checkouts.map((checkout) => ({
+        checkout,
+        activity: previousCheckoutActivity(previous, checkout.path),
+        watcher: new ProjectWatcher(),
+        watcherState: "idle" as const,
+      })),
     };
   }
 
   private async replaceEntry(entry: ProjectRuntimeEntry): Promise<void> {
     const previous = this.projects.get(entry.binding.path);
     if (previous) {
-      await previous.watcher.stop();
+      await this.stopEntryWatchers(previous);
     }
 
     this.projects.set(entry.binding.path, entry);
-    await this.startWatcher(entry);
+    await this.startWatchers(entry);
   }
 
   private async dashboardData(): Promise<DashboardData> {
@@ -300,35 +410,43 @@ export class RuntimeState {
     const projected = await projectDashboardData(
       entry.binding,
       entry.validation,
-      entry.activity,
+      entry.checkouts.flatMap((checkout) => checkout.activity),
     );
 
     return {
       ...projected,
       issue: projected.issue || entry.issue,
       realtime: {
-        watcher: entry.watcherState,
-        issue: entry.watcherIssue,
+        watcher: this.entryWatcherState(entry),
+        issue: this.entryWatcherIssue(entry),
       },
     };
   }
 
-  private async startWatcher(entry: ProjectRuntimeEntry): Promise<void> {
-    if (entry.binding.dialect !== "openspec") {
-      entry.watcherState = "idle";
+  private async startWatchers(entry: ProjectRuntimeEntry): Promise<void> {
+    await Promise.all(entry.checkouts.map((checkout) => this.startCheckoutWatcher(entry, checkout)));
+  }
+
+  private async startCheckoutWatcher(
+    entry: ProjectRuntimeEntry,
+    checkoutEntry: CheckoutRuntimeEntry,
+  ): Promise<void> {
+    if (checkoutEntry.checkout.dialect !== "openspec") {
+      checkoutEntry.watcherState = "idle";
       return;
     }
 
+    const binding = checkoutBinding(entry.binding, checkoutEntry.checkout);
     try {
-      await entry.watcher.start(
-        entry.binding,
+      await checkoutEntry.watcher.start(
+        binding,
         (event) => void this.handleProjectEvent(event),
-        (error) => this.handleWatcherError(entry.binding.path, error),
+        (error) => this.handleWatcherError(checkoutEntry.checkout.path, error),
       );
-      entry.watcherState = "watching";
+      checkoutEntry.watcherState = "watching";
     } catch (error) {
-      entry.watcherState = "error";
-      entry.watcherIssue = {
+      checkoutEntry.watcherState = "error";
+      checkoutEntry.watcherIssue = {
         code: "watcher-error",
         message: "The local watcher could not start.",
         detail: error instanceof Error ? error.message : String(error),
@@ -337,17 +455,20 @@ export class RuntimeState {
   }
 
   private async handleProjectEvent(event: ProjectEvent): Promise<void> {
-    const entry = this.projects.get(event.projectPath);
+    const found = this.entryByCheckoutPath(event.projectPath);
+    const entry = found?.entry;
+    const checkout = found?.checkout;
     if (!entry) {
       return;
     }
 
-    if (isOpenSpecDirectoryEvent(event)) {
-      await this.refreshEntryDiscovery(entry);
+    if (checkout) {
+      checkout.activity = [event, ...checkout.activity].slice(0, 50);
     }
-
-    entry.activity = [event, ...entry.activity].slice(0, 50);
     entry.validation = staleValidation(entry.validation);
+    if (isOpenSpecDirectoryEvent(event)) {
+      await this.reloadProject(entry.binding.id);
+    }
     this.broadcast({
       type: "project-event",
       payload: event,
@@ -355,33 +476,38 @@ export class RuntimeState {
     void this.broadcastSnapshot();
   }
 
-  private async refreshEntryDiscovery(entry: ProjectRuntimeEntry): Promise<void> {
-    const result = await discoverProject(entry.binding.path);
-    if (!result.ok) {
-      entry.issue = result.issue;
+  private async reloadProject(projectId: string): Promise<void> {
+    const setting = projectSettingById(this.settings, projectId);
+    if (!setting) {
       return;
     }
 
-    entry.binding = {
-      ...result.binding,
-      id: entry.binding.id,
-    };
-    entry.issue = result.issue;
-
-    if (entry.binding.dialect !== "openspec") {
-      await entry.watcher.stop();
-      entry.watcherState = "idle";
+    const previous = this.projects.get(setting.path);
+    const result = await discoverProject(setting.path);
+    if (!result.ok) {
+      if (previous) {
+        previous.issue = result.issue;
+      }
+      return;
     }
+
+    const entry = await this.createEntry(
+      { ...result.binding, id: projectId },
+      result.issue,
+      setting,
+      previous,
+    );
+    await this.replaceEntry(entry);
   }
 
-  private handleWatcherError(projectPath: string, error: Error): void {
-    const entry = this.projects.get(projectPath);
-    if (!entry) {
+  private handleWatcherError(checkoutPath: string, error: Error): void {
+    const found = this.entryByCheckoutPath(checkoutPath);
+    if (!found) {
       return;
     }
 
-    entry.watcherState = "error";
-    entry.watcherIssue = {
+    found.checkout.watcherState = "error";
+    found.checkout.watcherIssue = {
       code: "watcher-error",
       message: "The local watcher reported an error.",
       detail: error.message,
@@ -435,6 +561,36 @@ export class RuntimeState {
     }
     return this.settings.projects.find((project) => project.id === focusedProjectId)?.path;
   }
+
+  private async stopEntryWatchers(entry: ProjectRuntimeEntry): Promise<void> {
+    await Promise.all(entry.checkouts.map((checkout) => checkout.watcher.stop()));
+  }
+
+  private entryByCheckoutPath(
+    checkoutPath: string,
+  ): { entry: ProjectRuntimeEntry; checkout: CheckoutRuntimeEntry } | undefined {
+    for (const entry of this.projects.values()) {
+      const checkout = entry.checkouts.find((item) => item.checkout.path === checkoutPath);
+      if (checkout) {
+        return { entry, checkout };
+      }
+    }
+    return undefined;
+  }
+
+  private entryWatcherState(entry: ProjectRuntimeEntry): RealtimeState["watcher"] {
+    if (entry.checkouts.some((checkout) => checkout.watcherState === "error")) {
+      return "error";
+    }
+    if (entry.checkouts.some((checkout) => checkout.watcherState === "watching")) {
+      return "watching";
+    }
+    return "idle";
+  }
+
+  private entryWatcherIssue(entry: ProjectRuntimeEntry): RuntimeIssue | undefined {
+    return entry.checkouts.find((checkout) => checkout.watcherIssue)?.watcherIssue;
+  }
 }
 
 function invalidProjectBinding(project: RuntimeProjectSetting): ProjectBinding {
@@ -443,6 +599,10 @@ function invalidProjectBinding(project: RuntimeProjectSetting): ProjectBinding {
     path: project.path,
     name: path.basename(project.path) || project.path,
     dialect: "none",
+    worktreesPath: project.worktreesPath,
+    worktreePaths: project.worktreePaths || [],
+    checkouts: [],
+    worktreeIssues: [],
     discovery: {
       hasOpenSpecDir: false,
       hasConfig: false,
@@ -452,6 +612,27 @@ function invalidProjectBinding(project: RuntimeProjectSetting): ProjectBinding {
       scopes: [],
     },
   };
+}
+
+function previousCheckoutActivity(
+  previous: ProjectRuntimeEntry | undefined,
+  checkoutPath: string,
+): ProjectEvent[] {
+  return previous?.checkouts.find((checkout) => checkout.checkout.path === checkoutPath)?.activity || [];
+}
+
+function checkoutBinding(project: ProjectBinding, checkout: ProjectCheckout): ProjectBinding {
+  return {
+    ...project,
+    path: checkout.path,
+    dialect: checkout.dialect,
+    discovery: checkout.discovery,
+    checkouts: [checkout],
+  };
+}
+
+function normalizeUserPath(input: string): string {
+  return path.resolve(expandProjectPath(input.trim()));
 }
 
 export const runtimeState = new RuntimeState();

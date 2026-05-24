@@ -1,6 +1,12 @@
 "use client";
 
-import type { DashboardData, LanguageMode, RuntimeSettings, ThemeMode } from "@/lib/dashboard-types";
+import type {
+  DashboardData,
+  LanguageMode,
+  NormalizedChangeLifecycle,
+  RuntimeSettings,
+  ThemeMode,
+} from "@/lib/dashboard-types";
 import type { DashboardSection } from "@/lib/routes";
 import { ActivitySection } from "./sections/activity-section";
 import { ChangeDetailSection } from "./sections/details/change-detail-section";
@@ -22,6 +28,10 @@ export function SectionContent({
   onFocusProject,
   onRemoveProject,
   onRelocateProject,
+  onUpdateProjectWorktreesDirectory,
+  onAddProjectWorktreePath,
+  onRemoveProjectWorktreePath,
+  onRefreshProject,
   onRunValidation,
   onThemeChange,
   onLanguageChange,
@@ -34,6 +44,7 @@ export function SectionContent({
   changeDetail?: {
     projectId: string;
     changeId: string;
+    lifecycle: NormalizedChangeLifecycle;
   };
   data: DashboardData;
   settings?: RuntimeSettings;
@@ -42,6 +53,10 @@ export function SectionContent({
   onFocusProject: (path: string | null) => void;
   onRemoveProject: (path: string) => void;
   onRelocateProject: (projectId: string, path: string) => void;
+  onUpdateProjectWorktreesDirectory: (projectId: string, path: string | null) => void;
+  onAddProjectWorktreePath: (projectId: string, path: string) => void;
+  onRemoveProjectWorktreePath: (projectId: string, path: string) => void;
+  onRefreshProject: (projectId?: string) => void;
   onRunValidation: () => void;
   onThemeChange: (mode: ThemeMode) => void;
   onLanguageChange: (language: LanguageMode) => void;
@@ -55,6 +70,10 @@ export function SectionContent({
         onFocusProject={onFocusProject}
         onRemoveProject={onRemoveProject}
         onRelocateProject={onRelocateProject}
+        onUpdateProjectWorktreesDirectory={onUpdateProjectWorktreesDirectory}
+        onAddProjectWorktreePath={onAddProjectWorktreePath}
+        onRemoveProjectWorktreePath={onRemoveProjectWorktreePath}
+        onRefreshProject={onRefreshProject}
       />
     );
   }
@@ -86,6 +105,7 @@ export function SectionContent({
         data={data}
         projectId={changeDetail.projectId}
         changeId={changeDetail.changeId}
+        lifecycle={changeDetail.lifecycle}
       />
     );
   }

@@ -4,7 +4,12 @@ import { RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
-import type { DashboardData, LanguageMode, ThemeMode } from "@/lib/dashboard-types";
+import type {
+  DashboardData,
+  LanguageMode,
+  NormalizedChangeLifecycle,
+  ThemeMode,
+} from "@/lib/dashboard-types";
 import { useRuntimeDashboard } from "@/lib/hooks/use-runtime-dashboard";
 import { useNavigation } from "@/lib/navigation";
 import { paths, sectionFromPathname, type DashboardSection } from "@/lib/routes";
@@ -33,6 +38,7 @@ export function DashboardShell({
   changeDetail?: {
     projectId: string;
     changeId: string;
+    lifecycle: NormalizedChangeLifecycle;
   };
 }) {
   const runtime = useRuntimeDashboard();
@@ -100,6 +106,7 @@ function DashboardShellContent({
   changeDetail?: {
     projectId: string;
     changeId: string;
+    lifecycle: NormalizedChangeLifecycle;
   };
   onThemeChange: (mode: ThemeMode) => void;
 }) {
@@ -192,6 +199,16 @@ function DashboardShellContent({
             onRelocateProject={(projectId: string, path: string) =>
               runBusy(() => runtime.relocateProject(projectId, path))
             }
+            onUpdateProjectWorktreesDirectory={(projectId: string, path: string | null) =>
+              runBusy(() => runtime.updateProjectWorktreesDirectory(projectId, path))
+            }
+            onAddProjectWorktreePath={(projectId: string, path: string) =>
+              runBusy(() => runtime.addProjectWorktreePath(projectId, path))
+            }
+            onRemoveProjectWorktreePath={(projectId: string, path: string) =>
+              runBusy(() => runtime.removeProjectWorktreePath(projectId, path))
+            }
+            onRefreshProject={(projectId?: string) => runBusy(() => runtime.refreshProject(projectId))}
             onRunValidation={() => void runtime.runValidation()}
             onThemeChange={onThemeChange}
             onLanguageChange={(language: LanguageMode) => void runtime.setLanguage(language)}
@@ -227,11 +244,14 @@ function buildDetailHeader(
   changeDetail?: {
     projectId: string;
     changeId: string;
+    lifecycle: NormalizedChangeLifecycle;
   },
 ): Partial<React.ComponentProps<typeof PageHeader>> | undefined {
   if (changeDetail) {
     const project = data.projects.find((item) => item.project.id === changeDetail.projectId);
-    const change = project?.changes.find((item) => item.id === changeDetail.changeId);
+    const change = project?.changes.find(
+      (item) => item.id === changeDetail.changeId && item.lifecycle === changeDetail.lifecycle,
+    );
     const title = change && change.title !== change.id ? change.title : undefined;
     const progress =
       change && change.taskSummary.total > 0

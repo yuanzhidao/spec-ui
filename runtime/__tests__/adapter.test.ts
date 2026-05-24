@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, utimes, writeFile } from "node:fs/promises";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -43,6 +43,13 @@ async function fixtureProject() {
     ),
     "## ADDED Requirements\n\n### Requirement: Dashboard shell\n",
   );
+  await mkdir(path.join(projectPath, "openspec", "changes", "archive", "old-shell"), {
+    recursive: true,
+  });
+  await writeFile(
+    path.join(projectPath, "openspec", "changes", "archive", "old-shell", "proposal.md"),
+    "# Old shell\n",
+  );
 
   return projectPath;
 }
@@ -55,6 +62,9 @@ describe("OpenSpec adapter projection", () => {
       path: projectPath,
       name: "fixture",
       dialect: "openspec",
+      worktreePaths: [],
+      checkouts: [],
+      worktreeIssues: [],
       discovery: {
         hasOpenSpecDir: true,
         hasConfig: false,
@@ -71,31 +81,84 @@ describe("OpenSpec adapter projection", () => {
       [],
     );
 
+    const activeChange = data.changes.find((change) => change.lifecycle === "active");
+    const archivedChange = data.changes.find((change) => change.lifecycle === "archived");
+
     expect(data.specs).toHaveLength(1);
-    expect(data.changes).toHaveLength(1);
+    expect(data.changes.map((change) => `${change.lifecycle}:${change.id}`).sort()).toEqual([
+      "active:add-shell",
+      "archived:old-shell",
+    ]);
     expect(data.specs[0].projectId).toBe("prj_fixture0001");
     expect(data.specs[0].projectPath).toBe(projectPath);
     expect(data.specs[0].detail?.content).toContain("Existing dashboard requirement");
-    expect(data.changes[0].projectName).toBe("fixture");
-    expect(data.changes[0].taskSummary).toEqual({ total: 2, completed: 1 });
-    expect(data.changes[0].detail?.proposal.why).toBe("Users need a shell.");
-    expect(data.changes[0].detail?.proposal.whatChanges).toBe("Add the dashboard shell.");
-    expect(data.changes[0].detail?.design).toContain("workbench layout");
-    expect(data.changes[0].detail?.tasks.map((task) => task.text)).toEqual([
+    expect(activeChange?.projectName).toBe("fixture");
+    expect(activeChange?.taskSummary).toEqual({ total: 2, completed: 1 });
+    expect(activeChange?.detail?.proposal.why).toBe("Users need a shell.");
+    expect(activeChange?.detail?.proposal.whatChanges).toBe("Add the dashboard shell.");
+    expect(activeChange?.detail?.design).toContain("workbench layout");
+    expect(activeChange?.detail?.tasks.map((task) => task.text)).toEqual([
       "Prepare",
       "Build",
     ]);
-    expect(data.changes[0].detail?.deltaSpecs).toHaveLength(1);
-    expect(data.changes[0].detail?.files.map((file) => file.path)).toEqual([
+    expect(activeChange?.detail?.deltaSpecs).toHaveLength(1);
+    expect(activeChange?.detail?.files.map((file) => file.path)).toEqual([
       "design.md",
       "proposal.md",
       "specs/dashboard/spec.md",
       "tasks.md",
     ]);
+    expect(archivedChange).toMatchObject({
+      id: "old-shell",
+      lifecycle: "archived",
+      title: "Old shell",
+    });
     expect(data.requirements.map((requirement) => requirement.title)).toEqual([
       "Existing dashboard requirement",
       "Dashboard shell",
     ]);
+  });
+
+  it("keeps active and archived changes with the same ID separate", async () => {
+    const projectPath = await fixtureProject();
+    await mkdir(path.join(projectPath, "openspec", "changes", "archive", "add-shell"), {
+      recursive: true,
+    });
+    await writeFile(
+      path.join(projectPath, "openspec", "changes", "archive", "add-shell", "proposal.md"),
+      "# Archived shell\n",
+    );
+
+    const binding: ProjectBinding = {
+      id: "prj_fixture0001",
+      path: projectPath,
+      name: "fixture",
+      dialect: "openspec",
+      worktreePaths: [],
+      checkouts: [],
+      worktreeIssues: [],
+      discovery: {
+        hasOpenSpecDir: true,
+        hasConfig: false,
+        hasSpecsDir: true,
+        hasChangesDir: true,
+        isEmptyOpenSpec: false,
+        scopes: [{ id: "root", label: "root", path: "" }],
+      },
+    };
+
+    const data = await projectDashboardData(binding, { status: "not-run" }, []);
+    const shellChanges = data.changes
+      .filter((change) => change.id === "add-shell")
+      .sort((first, second) => first.lifecycle.localeCompare(second.lifecycle));
+
+    expect(shellChanges.map((change) => change.lifecycle)).toEqual([
+      "active",
+      "archived",
+    ]);
+    expect(shellChanges.find((change) => change.lifecycle === "archived")?.title).toBe(
+      "Archived shell",
+    );
   });
 
   it("projects nested scopes and aggregates same-id changes inside one project", async () => {
@@ -124,6 +187,9 @@ describe("OpenSpec adapter projection", () => {
       path: projectPath,
       name: "fixture",
       dialect: "openspec",
+      worktreePaths: [],
+      checkouts: [],
+      worktreeIssues: [],
       discovery: {
         hasOpenSpecDir: true,
         hasConfig: false,
@@ -142,15 +208,99 @@ describe("OpenSpec adapter projection", () => {
     expect(data.scopes).toHaveLength(2);
     expect(data.specs.map((spec) => spec.scopeId).sort()).toEqual(["apps_web", "root"]);
     expect(data.specs.find((spec) => spec.scopeId === "apps_web")?.id).toBe("apps_web__dashboard");
-    expect(data.changes).toHaveLength(1);
-    expect(data.changes[0]).toMatchObject({
+    const activeChange = data.changes.find((change) => change.id === "add-shell" && change.lifecycle === "active");
+
+    expect(activeChange).toMatchObject({
       id: "add-shell",
+      lifecycle: "active",
       taskSummary: { total: 4, completed: 3 },
       requirementCount: 1,
     });
-    expect(data.changes[0].scopedChanges?.map((change) => change.scopeId)).toEqual([
+    expect(activeChange?.scopedChanges?.map((change) => change.scopeId)).toEqual([
       "root",
       "apps_web",
+    ]);
+  });
+
+  it("merges same-id changes across checkouts and uses the latest checkout as primary", async () => {
+    const primaryPath = await fixtureProject();
+    const worktreePath = await fixtureProject();
+    const worktreeChangePath = path.join(worktreePath, "openspec", "changes", "add-shell");
+    const future = new Date(Date.now() + 60_000);
+    await writeFile(
+      path.join(worktreeChangePath, "proposal.md"),
+      "# Add shell from worktree\n\n## Why\n\nThe worktree has the latest change.\n",
+    );
+    await utimes(worktreeChangePath, future, future);
+
+    const binding: ProjectBinding = {
+      id: "prj_fixture0001",
+      path: primaryPath,
+      name: "fixture",
+      dialect: "openspec",
+      worktreePaths: [],
+      worktreeIssues: [],
+      discovery: {
+        hasOpenSpecDir: true,
+        hasConfig: false,
+        hasSpecsDir: true,
+        hasChangesDir: true,
+        isEmptyOpenSpec: false,
+        scopes: [{ id: "root", label: "root", path: "" }],
+      },
+      checkouts: [
+        {
+          id: "primary",
+          kind: "primary",
+          source: "primary",
+          path: primaryPath,
+          label: "main",
+          branch: "main",
+          dialect: "openspec",
+          discovery: {
+            hasOpenSpecDir: true,
+            hasConfig: false,
+            hasSpecsDir: true,
+            hasChangesDir: true,
+            isEmptyOpenSpec: false,
+            scopes: [{ id: "root", label: "root", path: "" }],
+          },
+        },
+        {
+          id: "wt_feature",
+          kind: "worktree",
+          source: "worktrees-directory",
+          path: worktreePath,
+          label: "feature",
+          branch: "feature",
+          dialect: "openspec",
+          discovery: {
+            hasOpenSpecDir: true,
+            hasConfig: false,
+            hasSpecsDir: true,
+            hasChangesDir: true,
+            isEmptyOpenSpec: false,
+            scopes: [{ id: "root", label: "root", path: "" }],
+          },
+        },
+      ],
+    };
+
+    const data = await projectDashboardData(binding, { status: "not-run" }, []);
+
+    expect(data.specs).toHaveLength(2);
+    expect(data.specs.find((spec) => spec.checkoutId === "wt_feature")?.id).toBe(
+      "wt_feature__dashboard",
+    );
+    expect(data.scopes.map((scope) => scope.id)).toEqual(["root", "wt_feature__root"]);
+    const activeChange = data.changes.find((change) => change.id === "add-shell" && change.lifecycle === "active");
+
+    expect(activeChange?.id).toBe("add-shell");
+    expect(activeChange?.title).toBe("Add shell from worktree");
+    expect(activeChange?.checkoutId).toBe("wt_feature");
+    expect(activeChange?.checkoutSources?.map((source) => source.checkoutId)).toEqual([
+      "wt_feature",
+      "primary",
     ]);
   });
 });

@@ -8,6 +8,9 @@ const binding: ProjectBinding = {
   path: "/workspace/demo",
   name: "demo",
   dialect: "openspec",
+  worktreePaths: [],
+  checkouts: [],
+  worktreeIssues: [],
   discovery: {
     hasOpenSpecDir: true,
     hasConfig: true,

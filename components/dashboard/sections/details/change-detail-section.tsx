@@ -2,7 +2,11 @@
 
 import { CheckCircle2, CheckSquare2, FileText, FolderTree, ListTodo } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { DashboardData, NormalizedChange } from "@/lib/dashboard-types";
+import type {
+  DashboardData,
+  NormalizedChange,
+  NormalizedChangeLifecycle,
+} from "@/lib/dashboard-types";
 import { AppLink } from "@/components/navigation/app-link";
 import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,14 +19,18 @@ export function ChangeDetailSection({
   data,
   projectId,
   changeId,
+  lifecycle,
 }: {
   data: DashboardData;
   projectId: string;
   changeId: string;
+  lifecycle: NormalizedChangeLifecycle;
 }) {
   const t = useTranslations("details.change");
   const project = data.projects.find((item) => item.project.id === projectId);
-  const change = project?.changes.find((item) => item.id === changeId);
+  const change = project?.changes.find(
+    (item) => item.id === changeId && item.lifecycle === lifecycle,
+  );
 
   if (!project || !change) {
     return (

@@ -9,16 +9,19 @@ import type {
 } from "@/lib/dashboard-types";
 import {
   addProject,
+  addProjectWorktreePath,
   clearProjects,
   fetchSnapshot,
   focusProject,
   relocateProject,
   removeProject,
+  removeProjectWorktreePath,
   refreshProject,
   runValidation,
   runtimeWebSocketUrl,
   setRuntimeLanguage,
   setRuntimeTheme,
+  updateProjectWorktreesDirectory,
 } from "@/lib/runtime-client";
 
 type RuntimeConnection = "disconnected" | "connecting" | "connected" | "reconnecting";
@@ -159,9 +162,15 @@ export function useRuntimeDashboard() {
       removeProject: (path: string) => runAction(() => removeProject(path)),
       relocateProject: (projectId: string, path: string) =>
         runAction(() => relocateProject(projectId, path)),
+      updateProjectWorktreesDirectory: (projectId: string, path: string | null) =>
+        runAction(() => updateProjectWorktreesDirectory(projectId, path)),
+      addProjectWorktreePath: (projectId: string, path: string) =>
+        runAction(() => addProjectWorktreePath(projectId, path)),
+      removeProjectWorktreePath: (projectId: string, path: string) =>
+        runAction(() => removeProjectWorktreePath(projectId, path)),
       clearProjects: () => runAction(clearProjects),
       clearProject: () => runAction(clearProjects),
-      refreshProject: () => runAction(refreshProject),
+      refreshProject: (projectId?: string) => runAction(() => refreshProject(projectId)),
       runValidation: () => runAction(runValidation),
       setTheme: (themeMode: ThemeMode) => runAction(() => setRuntimeTheme(themeMode)),
       setLanguage: (language: LanguageMode) =>

@@ -15,6 +15,8 @@ import { SETTINGS_DIR_NAME, SETTINGS_FILE_NAME } from "./config";
 const projectSettingSchema = z.object({
   id: z.string().regex(/^prj_[a-z0-9]+$/),
   path: z.string().min(1),
+  worktreesPath: z.string().min(1).optional(),
+  worktreePaths: z.array(z.string().min(1)).default([]),
 });
 
 const settingsSchemaV2 = z.object({
@@ -178,6 +180,57 @@ export function updateProjectPath(
   );
 }
 
+export function updateProjectWorktreesPath(
+  settings: RuntimeSettings,
+  projectId: string,
+  worktreesPath: string | null,
+): RuntimeSettings {
+  return withProjects(
+    settings,
+    settings.projects.map((project) =>
+      project.id === projectId
+        ? { ...project, worktreesPath: worktreesPath || undefined }
+        : project,
+    ),
+  );
+}
+
+export function addProjectWorktreePath(
+  settings: RuntimeSettings,
+  projectId: string,
+  worktreePath: string,
+): RuntimeSettings {
+  return withProjects(
+    settings,
+    settings.projects.map((project) =>
+      project.id === projectId
+        ? {
+            ...project,
+            worktreePaths: uniqueStrings([...(project.worktreePaths || []), worktreePath]),
+          }
+        : project,
+    ),
+  );
+}
+
+export function removeProjectWorktreePath(
+  settings: RuntimeSettings,
+  projectId: string,
+  worktreePath: string,
+): RuntimeSettings {
+  return withProjects(
+    settings,
+    settings.projects.map((project) =>
+      project.id === projectId
+        ? {
+            ...project,
+            worktreePaths: (project.worktreePaths || []).filter((pathValue) => pathValue !== worktreePath),
+          }
+        : project,
+    ),
+  );
+}
+
 export function withFocusedProjectId(
   settings: RuntimeSettings,
   focusedProjectId: string | null,
@@ -261,6 +314,7 @@ function createProjectSetting(
   return {
     id,
     path: projectPath,
+    worktreePaths: [],
   };
 }
 
@@ -287,8 +341,16 @@ function uniqueProjects(projects: RuntimeProjectSetting[]): RuntimeProjectSettin
     }
     seenIds.add(project.id);
     seenPaths.add(project.path);
-    result.push(project);
+    result.push({
+      ...project,
+      worktreesPath: project.worktreesPath || undefined,
+      worktreePaths: uniqueStrings(project.worktreePaths || []),
+    });
   }
 
   return result;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values.filter(Boolean)));
 }

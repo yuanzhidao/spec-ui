@@ -80,6 +80,9 @@ export async function discoverProject(input: string): Promise<ProjectDiscoveryRe
       name,
       dialect,
       discovery,
+      worktreePaths: [],
+      checkouts: [],
+      worktreeIssues: [],
     },
     issue:
       dialect === "none"
