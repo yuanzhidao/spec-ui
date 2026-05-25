@@ -51,6 +51,8 @@ jobs:
             curl \
             wget \
             file \
+            patchelf \
+            libfuse2t64 \
             libxdo-dev \
             libssl-dev \
             libayatana-appindicator3-dev \
@@ -147,6 +149,8 @@ jobs:
             curl \
             wget \
             file \
+            patchelf \
+            libfuse2t64 \
             libxdo-dev \
             libssl-dev \
             libayatana-appindicator3-dev \
@@ -156,6 +160,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build desktop package
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: ${{ matrix.platform == 'linux' && '1' || '' }}
         run: pnpm desktop:build --ci --no-sign --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
       - name: Collect release artifacts
