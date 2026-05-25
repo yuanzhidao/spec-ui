@@ -7,6 +7,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const args = parseArgs(process.argv.slice(2));
 const tag = requiredArg(args, "tag");
 const outputPath = path.resolve(rootDir, args.output || "release-notes.md");
+const repository = args.repository || process.env.GITHUB_REPOSITORY || "yuanzhidao/spec-ui";
 
 if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
   throw new Error(`Release tags must use vX.Y.Z format. Received: ${tag}`);
@@ -15,7 +16,7 @@ if (!/^v\d+\.\d+\.\d+$/.test(tag)) {
 const previousTag = findPreviousTag(tag);
 const range = previousTag ? `${previousTag}..${tag}` : tag;
 const commits = readCommits(range);
-const notes = renderReleaseNotes({ tag, previousTag, range, commits });
+const notes = renderReleaseNotes({ tag, previousTag, range, commits, repository });
 
 fs.writeFileSync(outputPath, notes);
 console.log(`Generated release notes for ${tag} from ${commits.length} commits.`);
@@ -74,10 +75,32 @@ function parseCommitRecord(record) {
   };
 }
 
-function renderReleaseNotes({ tag: releaseTag, previousTag: priorTag, range: rangeSpec, commits }) {
+function renderReleaseNotes({
+  tag: releaseTag,
+  previousTag: priorTag,
+  range: rangeSpec,
+  commits,
+  repository: releaseRepository,
+}) {
   const sections = groupCommits(commits);
   const lines = [
     `## ${releaseTag}`,
+    "",
+    "### Download Latest Preview Build",
+    "",
+    "Choose the artifact for your operating system:",
+    "",
+    ...renderDownloadTable(releaseTag, releaseRepository),
+    "",
+    "### macOS Unsigned Preview Builds",
+    "",
+    "macOS preview artifacts are unsigned and may be blocked by Gatekeeper. After moving `spec-ui.app` to `/Applications`, only run this command for a release artifact you trust:",
+    "",
+    "```bash",
+    'xattr -dr com.apple.quarantine "/Applications/spec-ui.app"',
+    "```",
+    "",
+    "### Changes",
     "",
     priorTag
       ? `Generated from commit messages in \`${rangeSpec}\`.`
@@ -100,6 +123,51 @@ function renderReleaseNotes({ tag: releaseTag, previousTag: priorTag, range: ran
   }
 
   return lines.join("\n");
+}
+
+function renderDownloadTable(releaseTag, releaseRepository) {
+  const version = releaseTag.replace(/^v/, "");
+  const artifacts = [
+    {
+      platform: "macOS",
+      arch: "Apple Silicon",
+      file: `spec-ui-${version}-macos-arm64.dmg`,
+      note: "DMG",
+    },
+    {
+      platform: "macOS",
+      arch: "Intel",
+      file: `spec-ui-${version}-macos-x64.dmg`,
+      note: "DMG",
+    },
+    {
+      platform: "Windows",
+      arch: "x64",
+      file: `spec-ui-${version}-windows-x64-setup.exe`,
+      note: "NSIS installer",
+    },
+    {
+      platform: "Linux",
+      arch: "x64",
+      file: `spec-ui-${version}-linux-x64.AppImage`,
+      note: "AppImage",
+    },
+    {
+      platform: "Linux",
+      arch: "x64",
+      file: `spec-ui-${version}-linux-x64.deb`,
+      note: "Debian package",
+    },
+  ];
+
+  return [
+    "| Platform | CPU | Download | Format |",
+    "| --- | --- | --- | --- |",
+    ...artifacts.map((artifact) => {
+      const url = `https://github.com/${releaseRepository}/releases/download/${releaseTag}/${artifact.file}`;
+      return `| ${artifact.platform} | ${artifact.arch} | [${artifact.file}](${url}) | ${artifact.note} |`;
+    }),
+  ];
 }
 
 function groupCommits(commits) {

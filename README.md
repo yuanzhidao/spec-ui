@@ -1,8 +1,8 @@
 # spec-ui
 
-spec-ui is a universal UI for spec-driven AI development.
+spec-ui is a local dashboard for spec-driven development.
 
-It turns local spec workflows into a real-time dashboard for projects that use OpenSpec today, while keeping the adapter layer open for additional spec formats later.
+It turns local OpenSpec projects into a real-time workspace for reviewing changes, specs, tasks, files, and validation state.
 
 **English | [简体中文](./README.zh-CN.md)**
 
@@ -10,7 +10,7 @@ It turns local spec workflows into a real-time dashboard for projects that use O
 
 Spec-driven projects often spread planning context across changes, specs, task lists, deltas, and validation output. spec-ui turns that local project structure into a dashboard that is easier to scan, navigate, and review.
 
-The goal is not to replace a spec system. The goal is to provide a shared product surface for maintainers, contributors, and AI agents working from the same spec-driven context.
+spec-ui does not replace OpenSpec. It gives local spec files a visual workspace, with project navigation, progress views, and live updates.
 
 The first supported workflow is OpenSpec:
 
@@ -20,7 +20,7 @@ The first supported workflow is OpenSpec:
 - Watch local files and update the dashboard in real time.
 - Move between all projects and focused project views without losing context.
 
-Future adapters can support additional spec formats without changing the main dashboard model.
+Additional spec formats are planned for later releases.
 
 ## Preview
 
@@ -38,18 +38,18 @@ Future adapters can support additional spec formats without changing the main da
 
 ## Current Status
 
-spec-ui is early-stage software. The product surface, runtime boundaries, and adapter contracts are being shaped through reviewed OpenSpec changes.
+spec-ui is early preview software. The current build focuses on OpenSpec projects, multi-project dashboards, monorepo scope detection, real-time local updates, and a desktop preview with an integrated terminal.
 
-APIs, UI flows, runtime behavior, desktop integration, and adapter contracts may continue to evolve.
+Some UI flows and desktop behavior may continue to change before a stable release.
 
 | Area | Status |
 | --- | --- |
-| Web dashboard | Active MVP |
-| OpenSpec adapter | First supported dialect |
-| Multi-project dashboard | Active MVP |
-| Monorepo scope detection | Active MVP |
-| Realtime local updates | Active MVP |
-| Desktop shell | Preview packaging |
+| Web dashboard | Preview |
+| OpenSpec support | Available |
+| Multi-project dashboard | Available |
+| Monorepo scope detection | Available |
+| Realtime local updates | Available |
+| Desktop app with terminal | Preview |
 | Additional spec dialects | Planned |
 
 ## Core Features
@@ -60,8 +60,8 @@ APIs, UI flows, runtime behavior, desktop integration, and adapter contracts may
 - **Monorepo scopes**: detect nested `openspec` directories and group matching change IDs under one project.
 - **Realtime updates**: file changes are watched by the local runtime and pushed to the UI over WebSocket.
 - **Local settings**: project state and preferences are stored locally in `~/.spec-ui/settings.json`.
-- **Theme and language preferences**: light, dark, and system theme support with English-first localization foundations.
-- **Desktop-ready direction**: the Web app remains the first-class surface while Tauri provides the desktop shell path.
+- **Theme and language preferences**: light, dark, and system theme support.
+- **Desktop terminal**: open a persistent terminal in the focused project directory, so tools such as `codex`, `claude`, and other local CLIs can start from the right workspace quickly.
 
 ## User Workflow
 
@@ -70,7 +70,8 @@ APIs, UI flows, runtime behavior, desktop integration, and adapter contracts may
 3. spec-ui detects OpenSpec structure in the selected directory.
 4. Open **Changes** to review active changes, tasks, scopes, deltas, specs, and files.
 5. Open **Specs** to browse project specs.
-6. Use **Settings** for appearance and language preferences.
+6. In the desktop app, open the terminal from the lower-right launcher to run local CLI tools in the focused project directory.
+7. Use **Settings** for appearance and language preferences.
 
 For monorepos, add the repository root. spec-ui detects nested `openspec` directories and displays each scope only when it exists.
 
@@ -110,11 +111,13 @@ For monorepos, add the repository root. spec-ui detects nested `openspec` direct
 ┌────────────────────┐
 │   Tauri Shell      │
 │ desktop container  │
-│ for the Web app    │
+│ and terminal PTY   │
 └────────────────────┘
 ```
 
 The runtime owns local file access, directory discovery, settings persistence, and file watching. React components consume structured project data instead of reading the filesystem directly.
+
+The desktop app owns integrated terminal sessions through Tauri and a Rust-managed PTY. Terminal sessions stay alive while navigating inside the app, and new sessions start in the currently focused project directory when one is selected.
 
 ## Requirements
 
@@ -139,6 +142,15 @@ Open http://localhost:3000 after the dev server starts.
 
 The Tauri shell currently loads the local Web app during development.
 
+In desktop mode, spec-ui also includes an integrated terminal for quickly starting project-local CLI tools, for example:
+
+```bash
+codex
+claude
+```
+
+New terminal sessions use the focused project directory as `cwd`. If no project is focused, sessions start in the user's home directory.
+
 ```bash
 source "$HOME/.cargo/env"
 pnpm desktop:dev
@@ -146,7 +158,7 @@ pnpm desktop:dev
 
 ## Desktop Release Artifacts
 
-Release tags use `vX.Y.Z`, starting with `v0.0.1`. The release workflow verifies project metadata, builds desktop artifacts for macOS, Windows, and Linux, uploads intermediate Actions artifacts, generates release notes from commit messages, then creates or updates a draft GitHub Release for maintainer review.
+Release tags use `vX.Y.Z`, starting with `v0.0.1`. Preview release artifacts are built for macOS, Windows, and Linux and attached to GitHub Releases.
 
 Generated preview artifacts:
 
@@ -155,6 +167,12 @@ Generated preview artifacts:
 - Linux AppImage and Debian package.
 
 Desktop preview builds are unsigned. Code signing, notarization, auto-updates, updater manifests, package-manager publishing, and app-store publishing are not part of the initial release flow.
+
+On macOS, unsigned preview builds may be blocked by Gatekeeper. After moving `spec-ui.app` to `/Applications`, only run this command for a release artifact you trust:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/spec-ui.app"
+```
 
 Pull requests run a desktop compile workflow across macOS, Windows, and Linux targets. It prepares the desktop runtime and checks the Tauri crate without producing installer artifacts.
 
@@ -187,10 +205,6 @@ cargo check
 ## Contributing
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
-
-Substantial behavior, UI, runtime, adapter, packaging, dependency, automation, or policy changes should start with an OpenSpec change before implementation.
-
-Use pnpm for JavaScript package operations. Dependencies should be added through package-manager or official CLI commands rather than hand-editing package manifests.
 
 ## License
 
