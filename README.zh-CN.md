@@ -158,13 +158,12 @@ pnpm desktop:dev
 
 ## 桌面端 Release 产物
 
-Release tag 使用 `vX.Y.Z`，从 `v0.0.1` 开始。Preview release artifacts 会构建 macOS、Windows 和 Linux 桌面端产物，并附加到 GitHub Releases。
+Release tag 使用 `vX.Y.Z`，从 `v0.0.1` 开始。Preview release artifacts 会构建 macOS 和 Windows 桌面端产物，并附加到 GitHub Releases。
 
 初期 preview 产物包括：
 
 - macOS Apple Silicon 和 Intel 的 DMG。
 - Windows NSIS installer。
-- Linux AppImage 和 Debian package。
 
 桌面端 preview build 都不签名。代码签名、公证、自动更新、updater manifest、package-manager 发布和 app-store 发布都不属于初期 release flow。
 

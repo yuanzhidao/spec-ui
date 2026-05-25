@@ -146,18 +146,6 @@ function renderDownloadTable(releaseTag, releaseRepository) {
       file: `spec-ui-${version}-windows-x64-setup.exe`,
       note: "NSIS installer",
     },
-    {
-      platform: "Linux",
-      arch: "x64",
-      file: `spec-ui-${version}-linux-x64.AppImage`,
-      note: "AppImage",
-    },
-    {
-      platform: "Linux",
-      arch: "x64",
-      file: `spec-ui-${version}-linux-x64.deb`,
-      note: "Debian package",
-    },
   ];
 
   return [

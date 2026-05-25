@@ -23,8 +23,6 @@ const expectedArtifacts = [
   `spec-ui-${version}-macos-arm64.dmg`,
   `spec-ui-${version}-macos-x64.dmg`,
   `spec-ui-${version}-windows-x64-setup.exe`,
-  `spec-ui-${version}-linux-x64.AppImage`,
-  `spec-ui-${version}-linux-x64.deb`,
 ];
 
 const artifactPaths = expectedArtifacts.map((name) => {

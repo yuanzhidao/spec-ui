@@ -158,13 +158,12 @@ pnpm desktop:dev
 
 ## Desktop Release Artifacts
 
-Release tags use `vX.Y.Z`, starting with `v0.0.1`. Preview release artifacts are built for macOS, Windows, and Linux and attached to GitHub Releases.
+Release tags use `vX.Y.Z`, starting with `v0.0.1`. Preview release artifacts are built for macOS and Windows and attached to GitHub Releases.
 
 Generated preview artifacts:
 
 - macOS DMG for Apple Silicon and Intel.
 - Windows NSIS installer.
-- Linux AppImage and Debian package.
 
 Desktop preview builds are unsigned. Code signing, notarization, auto-updates, updater manifests, package-manager publishing, and app-store publishing are not part of the initial release flow.
 
