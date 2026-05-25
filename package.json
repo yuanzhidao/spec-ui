@@ -20,7 +20,9 @@
     "release:verify": "node scripts/verify-release-version.mjs",
     "desktop:prepare-sidecar": "node scripts/prepare-node-sidecar.mjs",
     "release:notes": "node scripts/generate-release-notes.mjs",
-    "spec:validate": "openspec validate --all"
+    "spec:validate": "openspec validate --all",
+    "check:commit": "node scripts/check-commit.mjs",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -61,6 +63,7 @@
     "esbuild": "^0.28.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "lefthook": "^2.1.8",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
     "typescript": "^5",
