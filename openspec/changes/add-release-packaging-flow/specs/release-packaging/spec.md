@@ -1,0 +1,200 @@
+# release-packaging Specification
+
+## ADDED Requirements
+
+### Requirement: Semver tag release trigger
+
+The system SHALL provide a GitHub Release workflow that starts from strict semver tags using the `vX.Y.Z` format.
+
+#### Scenario: Valid release tag starts packaging
+
+- **WHEN** a maintainer pushes tag `v0.0.1`
+- **THEN** the release workflow validates the tag as strict semver
+- **AND** the workflow starts release verification and desktop packaging
+
+#### Scenario: Release tag matches project metadata
+
+- **WHEN** the release workflow runs for tag `v0.0.1`
+- **THEN** it verifies that package metadata version is `0.0.1`
+- **AND** it verifies that Tauri metadata version is `0.0.1`
+- **AND** artifact names use version `0.0.1`
+
+#### Scenario: Version mismatch fails before packaging
+
+- **WHEN** the release tag version does not match package metadata or Tauri metadata
+- **THEN** the release workflow fails before packaging artifacts
+- **AND** no draft GitHub Release is created or modified
+
+#### Scenario: Invalid release tag fails before publishing
+
+- **WHEN** a maintainer pushes a tag that does not match `vX.Y.Z`
+- **THEN** the release workflow fails before publishing artifacts
+- **AND** no GitHub Release artifacts are uploaded
+
+### Requirement: Cross-platform desktop artifacts
+
+The system SHALL build desktop release artifacts for macOS, Windows, and Linux.
+
+#### Scenario: Platform jobs upload intermediate artifacts
+
+- **WHEN** a platform packaging job completes successfully
+- **THEN** it uploads its desktop artifacts as Actions artifacts
+- **AND** it does not create or mutate the GitHub Release directly
+
+#### Scenario: Release artifacts are attached to draft GitHub Release
+
+- **WHEN** all required platform packaging jobs complete successfully
+- **THEN** the final aggregation job verifies the complete expected artifact set
+- **AND** macOS, Windows, and Linux artifacts are attached to a draft GitHub Release
+- **AND** artifact names include the app name, release version, platform, and architecture where available
+- **AND** a maintainer can review the draft before publishing it
+
+#### Scenario: Re-running the same tag is idempotent
+
+- **WHEN** the release workflow is re-run for the same release tag
+- **THEN** the final aggregation job replaces same-named draft assets before uploading new copies
+- **AND** the draft GitHub Release does not keep stale duplicate assets
+
+#### Scenario: Platform failure leaves no half-filled draft
+
+- **WHEN** one required platform packaging job fails
+- **THEN** the final release aggregation job does not attach artifacts to a GitHub Release
+- **AND** the workflow does not leave a partially populated release for that tag
+
+#### Scenario: Aggregation failure cleans partial draft output
+
+- **WHEN** the final aggregation job creates a draft GitHub Release and then fails before completing all uploads
+- **THEN** it deletes the newly created draft release or removes assets uploaded by the failed attempt
+- **AND** maintainers are not left with a partially populated draft from the failed run
+
+#### Scenario: No external registry publish occurs
+
+- **WHEN** the release workflow completes successfully
+- **THEN** artifacts are available through a GitHub Release after a maintainer publishes the draft
+- **AND** the workflow does not publish to app stores, package managers, or npm
+
+#### Scenario: Initial artifact formats are produced
+
+- **WHEN** the release workflow completes successfully
+- **THEN** macOS DMG artifacts exist for `aarch64` and `x86_64`
+- **AND** no macOS universal artifact is required
+- **AND** a Windows NSIS `.exe` artifact exists
+- **AND** Linux AppImage and Debian package artifacts exist
+- **AND** no RPM artifact is required
+
+#### Scenario: Forks do not publish releases
+
+- **WHEN** the release workflow runs in a fork or non-canonical repository
+- **THEN** verification and desktop compile checks may run
+- **AND** no GitHub Release is created or modified
+
+#### Scenario: Canonical repository may publish draft release
+
+- **WHEN** the release workflow runs in `yuanzhidao/spec-ui`
+- **THEN** the final aggregation job may create or update a draft GitHub Release after all required checks pass
+
+### Requirement: Next server desktop runtime
+
+The packaged desktop app SHALL run the existing Next.js server and local runtime server instead of using static export.
+
+#### Scenario: Desktop app starts bundled services
+
+- **WHEN** a user launches the packaged desktop app
+- **THEN** the app starts the bundled Next.js server
+- **AND** the app starts the bundled local runtime server
+- **AND** the app uses embedded target-specific Node runtime pieces instead of requiring Node.js to be preinstalled on the user's machine
+- **AND** the Tauri window opens only after the local services are ready
+
+#### Scenario: Dynamic routes remain available
+
+- **WHEN** a user opens route-backed pages in the packaged desktop app
+- **THEN** the pages are served by the bundled Next.js server
+- **AND** the desktop build does not depend on static export routing
+
+### Requirement: Managed local ports
+
+The packaged desktop app SHALL coordinate local loopback ports for its bundled services.
+
+#### Scenario: Startup avoids fixed-port conflicts
+
+- **WHEN** the packaged desktop app starts
+- **THEN** it validates or selects loopback ports for the web server and runtime server
+- **AND** it passes the selected ports to the managed processes through environment variables
+
+#### Scenario: Runtime origin is explicitly allowed
+
+- **WHEN** the packaged desktop app starts the local runtime
+- **THEN** the runtime CORS allowlist includes the desktop production origin and selected loopback origin
+- **AND** the runtime does not use a wildcard origin for desktop production
+
+### Requirement: Unsigned preview release
+
+The initial release flow SHALL produce unsigned preview artifacts for macOS, Windows, and Linux.
+
+#### Scenario: Unsigned artifacts are documented
+
+- **WHEN** a maintainer reads the release documentation
+- **THEN** the documentation states that all `0.0.1` desktop artifacts are unsigned preview builds
+- **AND** expected macOS and Windows platform warnings are not presented as packaging failures
+
+#### Scenario: Signing credentials are not required
+
+- **WHEN** the release workflow runs for `0.0.1`
+- **THEN** it does not require Apple, Windows certificate, notarization, or signing secrets
+- **AND** signing failures cannot block the release because signing is not part of this release flow
+
+### Requirement: No updater artifacts
+
+The initial release flow SHALL NOT configure an auto-updater or update-signing pipeline.
+
+#### Scenario: Updater output is not generated
+
+- **WHEN** the release workflow completes successfully
+- **THEN** it does not generate updater manifests
+- **AND** it does not generate updater signatures
+- **AND** it does not require updater signing keys
+
+### Requirement: Draft release notes
+
+The release flow SHALL provide draft release notes generated from commit messages for maintainer review without requiring a project-maintained changelog source in this change.
+
+#### Scenario: Draft release has commit-generated notes
+
+- **WHEN** the release workflow creates or updates the draft GitHub Release
+- **THEN** the draft release has release notes generated from git commit messages in the release range
+- **AND** commit messages are grouped into readable sections where possible
+- **AND** the workflow does not require a structured changelog entry
+
+#### Scenario: First release has commit-generated notes
+
+- **WHEN** no previous reachable tag exists for the release tag
+- **THEN** the release-note generator uses commits reachable from the release tag
+- **AND** the draft release still receives generated notes for maintainer review
+
+### Requirement: Pull-request desktop compile workflow
+
+The system SHALL provide a pull-request desktop compile workflow that checks desktop build readiness without publishing artifacts.
+
+#### Scenario: Pull request checks desktop compilation
+
+- **WHEN** a pull request opens or updates
+- **THEN** the desktop compile workflow prepares the desktop runtime for macOS, Windows, and Linux targets where CI runners are available
+- **AND** it runs Rust/Tauri compile checks for those targets
+- **AND** it does not build installer artifacts
+- **AND** it does not upload release artifacts as Actions artifacts
+- **AND** no GitHub Release is created or modified
+
+### Requirement: Release verification gate
+
+The release workflow SHALL run project verification before release artifact packaging and draft attachment.
+
+#### Scenario: Verification fails
+
+- **WHEN** typecheck, lint, tests, OpenSpec validation, Rust format, Rust check, or web build fails
+- **THEN** release packaging does not attach artifacts to a draft GitHub Release
+
+#### Scenario: Verification passes
+
+- **WHEN** all required verification steps pass
+- **THEN** the release workflow may package desktop artifacts
+- **AND** the final aggregation job may attach the full artifact set to a draft GitHub Release after required platform jobs succeed

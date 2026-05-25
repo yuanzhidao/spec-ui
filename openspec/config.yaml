@@ -6,7 +6,7 @@ context: |
   Product direction:
   - Build a real-time dashboard tool compatible with multiple spec-driven standards.
   - The first delivery target is a Web application.
-  - The later target is desktop packaging.
+  - Desktop packaging uses Tauri v2 and keeps the Web app/runtime architecture.
   - The project is in an early shaping phase. Product behavior, information architecture, technical stack, contribution workflow, and packaging strategy changes must be defined through OpenSpec first.
   - The MVP should let users choose a local project directory from the UI. Early Web builds may use a path-based picker/input backed by a local server; a later desktop build may replace it with a native folder picker.
   - Realtime project updates should use WebSocket transport unless a later approved design changes the realtime protocol.
@@ -20,6 +20,10 @@ context: |
   Technical stack:
   - Use the latest Next.js version.
   - Use Tauri v2 for the desktop shell while preserving the existing Web stack.
+  - Desktop production packaging keeps a Next.js server and local runtime server instead of static export.
+  - Desktop packages embed official target-specific Node runtime pieces needed to run the bundled Web/runtime servers.
+  - Initial desktop release artifacts target GitHub Releases only: macOS DMG, Windows NSIS, Linux AppImage, and Linux Debian package.
+  - Initial desktop release artifacts are unsigned preview builds. Code signing, notarization, auto-updates, updater manifests, and package-manager publishing require later approved changes.
   - Use pnpm as the default package manager.
   - Install dependencies and scaffolding through CLI/package-manager commands that resolve current package metadata; do not hand-write package.json to add dependencies.
   - Local project reading and file watching should run outside React UI components behind a server/runtime boundary.
