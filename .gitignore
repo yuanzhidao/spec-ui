@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# desktop packaging output
+/src-tauri/binaries/
+/src-tauri/desktop-runtime/
+/release-artifacts/
+/release-notes.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

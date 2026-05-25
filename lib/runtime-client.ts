@@ -1,13 +1,20 @@
 import type { LanguageMode, RuntimeSnapshot, ThemeMode } from "@/lib/dashboard-types";
 
-const runtimeHttpBase =
-  process.env.NEXT_PUBLIC_SPEC_UI_RUNTIME_HTTP || "http://127.0.0.1:4317";
+type RuntimeEndpointConfig = {
+  httpBase: string;
+  wsBase: string;
+};
 
-const runtimeWsBase =
-  process.env.NEXT_PUBLIC_SPEC_UI_RUNTIME_WS || "ws://127.0.0.1:4317";
+const defaultRuntimeConfig: RuntimeEndpointConfig = {
+  httpBase: process.env.NEXT_PUBLIC_SPEC_UI_RUNTIME_HTTP || "http://127.0.0.1:4317",
+  wsBase: process.env.NEXT_PUBLIC_SPEC_UI_RUNTIME_WS || "ws://127.0.0.1:4317",
+};
 
-export function runtimeWebSocketUrl(): string {
-  return `${runtimeWsBase}/ws`;
+let runtimeConfigRequest: Promise<RuntimeEndpointConfig> | null = null;
+
+export async function runtimeWebSocketUrl(): Promise<string> {
+  const config = await runtimeEndpointConfig();
+  return `${config.wsBase}/ws`;
 }
 
 export async function fetchSnapshot(): Promise<RuntimeSnapshot> {
@@ -128,7 +135,8 @@ export async function setRuntimeLanguage(
 }
 
 async function runtimeRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${runtimeHttpBase}${path}`, {
+  const config = await runtimeEndpointConfig();
+  const response = await fetch(`${config.httpBase}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -142,4 +150,30 @@ async function runtimeRequest<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+async function runtimeEndpointConfig(): Promise<RuntimeEndpointConfig> {
+  if (!runtimeConfigRequest) {
+    runtimeConfigRequest = fetch("/api/runtime-config", {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Runtime config request failed with ${response.status}`);
+        }
+
+        const config = (await response.json()) as Partial<RuntimeEndpointConfig>;
+        if (!config.httpBase || !config.wsBase) {
+          throw new Error("Runtime config response is missing runtime endpoints.");
+        }
+
+        return {
+          httpBase: config.httpBase,
+          wsBase: config.wsBase,
+        };
+      })
+      .catch(() => defaultRuntimeConfig);
+  }
+
+  return runtimeConfigRequest;
 }

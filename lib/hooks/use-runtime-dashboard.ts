@@ -85,43 +85,54 @@ export function useRuntimeDashboard() {
     }
 
     let closed = false;
+    let socket: WebSocket | null = null;
 
     function connect(nextState: RuntimeConnection) {
       setConnection(nextState);
-      const socket = new WebSocket(runtimeWebSocketUrl());
 
-      socket.onopen = () => {
-        if (!closed) {
-          setConnection("connected");
-        }
-      };
-
-      socket.onmessage = (event) => {
-        const message = JSON.parse(event.data) as {
-          type: string;
-          payload: RuntimeSnapshot;
-        };
-        if (message.type === "snapshot") {
-          setSnapshot(cacheSnapshot(message.payload));
-        }
-      };
-
-      socket.onclose = () => {
+      void runtimeWebSocketUrl().then((url) => {
         if (closed) {
           return;
         }
-        setConnection("reconnecting");
-        reconnectTimer.current = setTimeout(() => connect("reconnecting"), 1200);
-      };
 
-      socket.onerror = () => {
-        socket.close();
-      };
+        socket = new WebSocket(url);
 
-      return socket;
+        socket.onopen = () => {
+          if (!closed) {
+            setConnection("connected");
+          }
+        };
+
+        socket.onmessage = (event) => {
+          const message = JSON.parse(event.data) as {
+            type: string;
+            payload: RuntimeSnapshot;
+          };
+
+          if (!closed && message.type === "snapshot") {
+            setSnapshot(cacheSnapshot(message.payload));
+            setError(null);
+          }
+        };
+
+        socket.onclose = () => {
+          if (closed) {
+            return;
+          }
+
+          setConnection("reconnecting");
+          reconnectTimer.current = setTimeout(() => connect("reconnecting"), 1200);
+        };
+
+        socket.onerror = () => {
+          if (!closed) {
+            socket?.close();
+          }
+        };
+      });
     }
 
-    const socket = connect("connecting");
+    connect("connecting");
 
     return () => {
       closed = true;
@@ -133,22 +144,19 @@ export function useRuntimeDashboard() {
     };
   }, [projectCount]);
 
-  const runAction = useCallback(
-    async (action: () => Promise<RuntimeSnapshot>) => {
-      try {
-        const next = await action();
-        setSnapshot(cacheSnapshot(next));
-        setError(null);
-      } catch (actionError) {
-        setError({
-          code: "runtime-error",
-          message: "Runtime action failed.",
-          detail: actionError instanceof Error ? actionError.message : String(actionError),
-        });
-      }
-    },
-    [],
-  );
+  const runAction = useCallback(async (action: () => Promise<RuntimeSnapshot>) => {
+    try {
+      const next = await action();
+      setSnapshot(cacheSnapshot(next));
+      setError(null);
+    } catch (actionError) {
+      setError({
+        code: "runtime-error",
+        message: "Runtime action failed.",
+        detail: actionError instanceof Error ? actionError.message : String(actionError),
+      });
+    }
+  }, []);
 
   return useMemo(
     () => ({

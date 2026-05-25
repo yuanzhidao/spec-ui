@@ -1,6 +1,6 @@
 {
   "name": "spec-ui",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "dev": "concurrently -n web,runtime -c blue,magenta \"next dev\" \"tsx watch runtime/server.ts\"",
@@ -13,7 +13,12 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "desktop:dev": "tauri dev",
-    "desktop:info": "tauri info"
+    "desktop:info": "tauri info",
+    "desktop:build": "tauri build",
+    "desktop:prepare": "node scripts/desktop-build.mjs",
+    "release:verify": "node scripts/verify-release-version.mjs",
+    "desktop:prepare-sidecar": "node scripts/prepare-node-sidecar.mjs",
+    "release:notes": "node scripts/generate-release-notes.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -48,6 +53,7 @@
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
     "concurrently": "^9.2.1",
+    "esbuild": "^0.28.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",

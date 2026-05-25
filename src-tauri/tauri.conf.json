@@ -1,17 +1,18 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "spec-ui",
-  "version": "0.1.0",
-  "identifier": "dev.spec-ui.app",
+  "version": "0.0.1",
+  "identifier": "io.github.yuanzhidao.spec-ui",
   "build": {
     "frontendDist": "desktop-build-disabled",
     "devUrl": "http://localhost:3000",
     "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "node scripts/desktop-build-deferred.mjs"
+    "beforeBuildCommand": "pnpm desktop:prepare"
   },
   "app": {
     "windows": [
       {
+        "create": false,
         "title": "spec-ui",
         "width": 1280,
         "height": 860,
@@ -28,6 +29,12 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "externalBin": [
+      "binaries/spec-ui-node"
+    ],
+    "resources": [
+      "desktop-runtime/"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
