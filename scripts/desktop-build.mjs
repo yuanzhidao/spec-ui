@@ -109,14 +109,37 @@ function copyDir(source, destination, options = {}) {
 }
 
 function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
+  const { env, ...spawnOptions } = options;
+  const executable = resolveExecutable(command);
+  const result = spawnSync(executable, args, {
     cwd: rootDir,
-    env: process.env,
+    env: {
+      ...process.env,
+      ...env,
+    },
     stdio: "inherit",
-    ...options,
+    ...spawnOptions,
   });
+
+  if (result.error) {
+    throw new Error(
+      `${command} ${args.join(" ")} failed to start: ${result.error.message}`,
+    );
+  }
+
+  if (result.signal) {
+    throw new Error(`${command} ${args.join(" ")} exited with signal ${result.signal}`);
+  }
 
   if (result.status !== 0) {
     throw new Error(`${command} ${args.join(" ")} failed with exit code ${result.status}`);
   }
+}
+
+function resolveExecutable(command) {
+  if (process.platform === "win32" && command === "pnpm") {
+    return "pnpm.cmd";
+  }
+
+  return command;
 }

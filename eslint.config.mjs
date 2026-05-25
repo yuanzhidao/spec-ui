@@ -16,6 +16,9 @@ const eslintConfig = defineConfig([
     "src-tauri/binaries/**",
     "src-tauri/desktop-runtime/**",
     "release-artifacts/**",
+    ".local/**",
+    ".scratch/**",
+    ".worktrees/**",
     "next-env.d.ts",
   ]),
 ]);
