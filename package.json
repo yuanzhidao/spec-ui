@@ -12,7 +12,7 @@
     "runtime": "tsx runtime/server.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "desktop:dev": "tauri dev",
+    "desktop:dev": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "desktop:info": "tauri info",
     "desktop:build": "tauri build",
     "desktop:prepare": "node scripts/desktop-build.mjs",
