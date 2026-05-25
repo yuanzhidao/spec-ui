@@ -43,7 +43,24 @@ pnpm desktop:build --ci --no-sign
 
 Use `main` as the base branch. Create a feature branch for every meaningful change.
 
+Branch names should be descriptive and lowercase, preferably tied to an issue number, OpenSpec change ID, or concise feature name:
+
+- `feat/add-release-packaging-flow`
+- `fix/runtime-origin-allowlist`
+- `docs/contributing-setup`
+
 When working locally, prefer a dedicated worktree outside the repository checkout. Do not put active worktrees inside the project directory, because nested worktrees can cause recursive file watching and excessive memory usage.
+
+Use Conventional Commit messages:
+
+- `feat(scope): add capability`
+- `fix(scope): correct behavior`
+- `docs(scope): update guidance`
+- `test(scope): add coverage`
+- `ci(scope): update workflow`
+- `chore(scope): maintain tooling`
+
+Keep commits logically scoped. Split specs, app behavior, CI, documentation, dependency changes, and cleanup when they can be reviewed independently.
 
 ## OpenSpec First
 
@@ -129,5 +146,7 @@ Pull requests should be narrow and reviewable. Include:
 - Screenshots, recordings, or logs when relevant.
 - Dependency changes and justification.
 - Breaking-change disclosure.
+
+Prefer Conventional Commit style for pull request titles because squash merges may use the pull request title.
 
 Maintainers may ask for an OpenSpec change, more tests, clearer screenshots, or a smaller PR before review.

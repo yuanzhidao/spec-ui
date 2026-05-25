@@ -13,7 +13,7 @@ The repository SHALL provide a lightweight `README.md` that introduces spec-ui, 
 
 ### Requirement: Contribution guide
 
-The repository SHALL provide a public `CONTRIBUTING.md` that explains how contributors should set up the project, choose a branch/worktree, plan changes, install dependencies, verify changes, and open pull requests.
+The repository SHALL provide a public `CONTRIBUTING.md` that explains how contributors should set up the project, choose a branch/worktree, write scoped Conventional Commit messages, plan changes, install dependencies, verify changes, and open pull requests.
 
 #### Scenario: Contributor reads setup instructions
 
@@ -24,6 +24,13 @@ The repository SHALL provide a public `CONTRIBUTING.md` that explains how contri
 
 - **WHEN** a contribution changes behavior, UI flow, architecture, parser behavior, runtime boundaries, packaging, dependencies, automation, or contribution policy
 - **THEN** the guide requires an OpenSpec change before implementation
+
+#### Scenario: Contributor prepares branch and commits
+
+- **WHEN** a contributor prepares local work for review
+- **THEN** the guide recommends descriptive lowercase branch names tied to an issue, OpenSpec change ID, or concise feature name
+- **AND** it requires Conventional Commit style messages for commits
+- **AND** it recommends logically scoped commits that split specs, app behavior, CI, documentation, dependencies, and cleanup when independently reviewable
 
 #### Scenario: Contributor changes dependencies
 
