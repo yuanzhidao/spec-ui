@@ -148,6 +148,14 @@ function extractArchive(archivePath, destinationDir, archiveName) {
     ? extractZip(archivePath, destinationDir)
     : extractTar(archivePath, destinationDir);
 
+  if (result.error) {
+    throw new Error(`Failed to extract ${archiveName}: ${result.error.message}`);
+  }
+
+  if (result.signal) {
+    throw new Error(`Failed to extract ${archiveName}: exited with signal ${result.signal}`);
+  }
+
   if (result.status !== 0) {
     throw new Error(`Failed to extract ${archiveName} with exit code ${result.status}`);
   }
@@ -162,11 +170,16 @@ function extractZip(archivePath, destinationDir) {
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "Expand-Archive -LiteralPath $args[0] -DestinationPath $args[1] -Force",
-        archivePath,
-        destinationDir,
+        "Expand-Archive -LiteralPath $env:SPEC_UI_NODE_ARCHIVE -DestinationPath $env:SPEC_UI_NODE_EXTRACT_DIR -Force",
       ],
-      { stdio: "inherit" },
+      {
+        env: {
+          ...process.env,
+          SPEC_UI_NODE_ARCHIVE: archivePath,
+          SPEC_UI_NODE_EXTRACT_DIR: destinationDir,
+        },
+        stdio: "inherit",
+      },
     );
   }
 
