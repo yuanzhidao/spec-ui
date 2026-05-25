@@ -189,7 +189,7 @@ pnpm desktop:build --ci --no-sign
 pnpm typecheck
 pnpm lint
 pnpm test
-openspec validate --all
+pnpm spec:validate
 ```
 
 涉及 Tauri 的改动：

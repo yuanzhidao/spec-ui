@@ -19,7 +19,8 @@
     "desktop:prepare": "node scripts/desktop-build.mjs",
     "release:verify": "node scripts/verify-release-version.mjs",
     "desktop:prepare-sidecar": "node scripts/prepare-node-sidecar.mjs",
-    "release:notes": "node scripts/generate-release-notes.mjs"
+    "release:notes": "node scripts/generate-release-notes.mjs",
+    "spec:validate": "openspec validate --all"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -49,6 +50,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@fission-ai/openspec": "^1.3.1",
     "@tailwindcss/postcss": "^4",
     "@tauri-apps/cli": "^2.11.2",
     "@types/node": "^20",

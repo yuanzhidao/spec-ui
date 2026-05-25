@@ -76,7 +76,7 @@ Small typo fixes, purely mechanical formatting, and narrow test repairs may bypa
 Use:
 
 ```bash
-openspec validate <change-id>
+pnpm spec:validate
 ```
 
 ## Dependency Policy
@@ -110,7 +110,7 @@ Run the checks that match your change:
 pnpm typecheck
 pnpm lint
 pnpm test
-openspec validate <change-id>
+pnpm spec:validate
 ```
 
 For Tauri changes:

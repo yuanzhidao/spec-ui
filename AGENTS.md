@@ -112,7 +112,7 @@ Allowed exceptions are narrow:
 
 Treat OpenSpec self-review as a separate manual gate, not as a synonym for validation.
 
-- `openspec validate` only checks syntax and structural consistency. It does not count as self-review.
+- `pnpm spec:validate` only checks OpenSpec syntax and structural consistency. It does not count as self-review.
 - After every OpenSpec create or update, manually review `proposal.md`, `design.md`, `tasks.md`, and every spec delta before saying the spec is done, reviewed, or ready for approval.
 - The manual self-review must check scope classification, affected behavior, ownership boundaries, contradictions between artifacts, requirement wording, scenario observability, validation tasks, and the approval checkpoint.
 - If any self-review pass finds a blocker, revise the OpenSpec artifacts yourself first, then run another self-review pass. Repeat this review -> fix -> review loop until a full pass finds no blockers.
@@ -130,7 +130,7 @@ Required flow:
 1. Confirm request classification, scope, affected areas, and whether to group related requirements.
 2. Propose the change with the project OpenSpec workflow or equivalent files under `openspec/changes/<change-id>/`, written in English by default.
 3. Self-review the OpenSpec artifacts manually, fix every blocking issue found, then self-review again.
-4. Validate the change with `openspec validate <change-id>` or `openspec validate --all`.
+4. Validate the change with `pnpm spec:validate`.
 5. Present the spec summary, self-review status, and validation command/result to the maintainer, then wait for explicit approval before implementation.
 6. Implement only the behavior covered by the approved change.
 7. Update tasks and specs as implementation facts change.
