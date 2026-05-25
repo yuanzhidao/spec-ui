@@ -148,10 +148,7 @@ impl TerminalManager {
 
     fn session_infos(&self) -> Vec<TerminalSessionInfo> {
         let state = self.inner.lock().expect("terminal state lock poisoned");
-        let mut sessions = state
-            .sessions
-            .values()
-            .collect::<Vec<_>>();
+        let mut sessions = state.sessions.values().collect::<Vec<_>>();
         sessions.sort_by_key(|session| session.sequence);
         sessions.into_iter().map(session_info).collect()
     }
