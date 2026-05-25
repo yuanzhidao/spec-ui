@@ -24,7 +24,7 @@
 - [x] 3.8 Add recoverable error and empty states for unreadable, missing, no-spec, unsupported, or stale persisted project directories.
 - [x] 3.9 Add tests for valid project addition, duplicate handling, invalid path handling, no-spec directory handling, OpenSpec detection, project focus behavior, project remove/clear behavior, restart restore behavior, invalid settings handling, language preference handling, and atomic settings writes.
 - [x] 3.10 Add monorepo OpenSpec scope discovery that searches for `openspec` directories under one project root with deterministic root-first ordering.
-- [x] 3.11 Prune dependency, build, hidden, worktree, reference, and inherited `.gitignore`-ignored directories during OpenSpec scope discovery.
+- [x] 3.11 Prune dependency, build, hidden, worktree, auxiliary, and inherited `.gitignore`-ignored directories during OpenSpec scope discovery.
 - [x] 3.12 Add tests for root scope, nested scopes, nested-only scopes, ignored directories, root and nested `.gitignore` pruning, unreadable `.gitignore` recovery, no-scope projects, and deterministic ordering.
 
 ## 4. Spec Dialect Adapter
@@ -63,7 +63,7 @@
 - [x] 6.7 Implement the Validation section with status display and manual validation action for the focused project.
 - [x] 6.8 Implement MVP section content for Specs, Changes, Projects, Activity, Validation, and Settings with multi-project empty states.
 - [x] 6.9 Verify dashboard shell and MVP sections render correctly in Light, Dark, and System theme modes, including automatic OS theme changes while System mode is active.
-- [x] 6.10 Review MVP spacing, density, borderless sidebar behavior, project list behavior, board rhythm, and command/search behavior against the approved reference direction.
+- [x] 6.10 Review MVP spacing, density, borderless sidebar behavior, project list behavior, board rhythm, and command/search behavior against the approved product direction.
 
 ## 7. Multi-Project Workbench
 

@@ -14,9 +14,9 @@ The project uses one root `openspec/` instance, English as the primary artifact 
 - Support monorepo-style projects by discovering multiple OpenSpec scopes under one added project root without requiring the user to add each subdirectory separately.
 - Define a `SpecDialectAdapter` boundary with OpenSpec as the first implementation.
 - Define WebSocket-based realtime events for project file changes, projection refreshes, validation state, and connection health.
-- Establish a reference-aligned operational layout: persistent sidebar, dense central workspace, Specs-first workboard, project drill-down, detail inspector, command/search entry, and restrained transitions.
+- Establish a target operational layout: persistent sidebar, dense central workspace, Specs-first workboard, project drill-down, detail inspector, command/search entry, and restrained transitions.
 - Establish design token, theme, and language expectations for light default UI with user-selectable preferences in Settings.
-- Follow the approved reference UI behavior and visual rhythm for the MVP; independent brand styling is out of scope for this change.
+- Follow the approved product UI behavior and visual rhythm for the MVP; independent brand styling is out of scope for this change.
 
 **Non-Goals:**
 
@@ -122,9 +122,9 @@ Alternatives considered:
 - Embed all runtime behavior in Next.js: rejected because long-lived watcher and WebSocket lifecycle should remain runtime-owned.
 - Solve final desktop process orchestration now: rejected as premature for the Web-first MVP.
 
-### Decision: Keep UI shell dense, inspectable, and reference-aligned
+### Decision: Keep UI shell dense and inspectable
 
-The MVP shell SHALL prioritize a workbench over a landing page. The default layout SHALL include sidebar navigation, a central board surface, project-focused drill-down, a detail inspector, and a command/search trigger. Empty states SHALL guide the user to add a project directory or create/read OpenSpec artifacts. The MVP SHALL align interaction density, sidebar behavior, panel rhythm, command/search behavior, and restrained visual treatment with the approved reference UI direction; defining a distinct spec-ui visual identity is a non-goal for this change.
+The MVP shell SHALL prioritize a workbench over a landing page. The default layout SHALL include sidebar navigation, a central board surface, project-focused drill-down, a detail inspector, and a command/search trigger. Empty states SHALL guide the user to add a project directory or create/read OpenSpec artifacts. The MVP SHALL align interaction density, sidebar behavior, panel rhythm, command/search behavior, and restrained visual treatment with the approved product direction; defining a distinct spec-ui visual identity is a non-goal for this change.
 
 Alternatives considered:
 - Marketing-style landing first screen: rejected because the app is a tool, not a campaign page.

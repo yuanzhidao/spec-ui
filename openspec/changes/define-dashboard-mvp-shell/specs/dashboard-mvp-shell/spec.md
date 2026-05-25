@@ -328,5 +328,5 @@ The system SHALL align MVP visual behavior with the approved operational UI dire
 - **THEN** spacing, density, borderless sidebar treatment, project list behavior, board rhythm, and command/search behavior follow the approved product direction
 
 #### Scenario: New visual style is proposed
-- **WHEN** implementation requires a distinct spec-ui visual identity beyond semantic tokens and reference-aligned behavior
+- **WHEN** implementation requires a distinct spec-ui visual identity beyond semantic tokens and the approved product behavior
 - **THEN** that visual identity is deferred to a separate approved OpenSpec change

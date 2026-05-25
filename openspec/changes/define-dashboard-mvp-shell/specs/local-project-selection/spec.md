@@ -60,7 +60,7 @@ Scope discovery SHALL search for directories named `openspec` instead of relying
 - **THEN** the system adds the directory as a blank no-spec project state without creating synthetic scopes
 
 #### Scenario: Scope scan ignores heavy directories
-- **WHEN** the submitted directory contains dependency, build, hidden, worktree, or reference directories
+- **WHEN** the submitted directory contains dependency, build, hidden, worktree, or auxiliary directories
 - **THEN** the system skips ignored directories during scope discovery so generated or nested repository content does not appear as project scopes
 
 #### Scenario: Scope scan follows project ignore rules
