@@ -11,6 +11,8 @@ use tauri_plugin_shell::{
     ShellExt,
 };
 
+mod terminal;
+
 const HOST: &str = "127.0.0.1";
 const DEV_WEB_PORT: u16 = 3000;
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(30);
@@ -47,6 +49,15 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .manage(ManagedProcesses::default())
+        .manage(terminal::TerminalManager::default())
+        .invoke_handler(tauri::generate_handler![
+            terminal::terminal_detect_environment,
+            terminal::terminal_list_sessions,
+            terminal::terminal_create_session,
+            terminal::terminal_write,
+            terminal::terminal_resize,
+            terminal::terminal_close_session,
+        ])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -69,6 +80,7 @@ pub fn run() {
         .on_window_event(|window, event| {
             if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
                 window.state::<ManagedProcesses>().kill_all();
+                window.state::<terminal::TerminalManager>().close_all();
             }
         })
         .run(tauri::generate_context!())
@@ -160,12 +172,19 @@ fn log_process_line(label: &str, stream: &str, line: Vec<u8>) {
 fn create_main_window(app: &tauri::App, web_port: u16) -> Result<(), Box<dyn std::error::Error>> {
     let url = format!("http://{HOST}:{web_port}");
     WebviewWindowBuilder::new(app, "main", WebviewUrl::External(url.parse()?))
+        .on_navigation(move |url| is_allowed_app_navigation(url, web_port))
         .title("spec-ui")
         .inner_size(1280.0, 860.0)
         .min_inner_size(1024.0, 720.0)
         .resizable(true)
         .build()?;
     Ok(())
+}
+
+fn is_allowed_app_navigation(url: &tauri::Url, web_port: u16) -> bool {
+    url.scheme() == "http"
+        && url.host_str() == Some(HOST)
+        && url.port_or_known_default() == Some(web_port)
 }
 
 fn resolve_resource(

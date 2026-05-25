@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { TerminalHost } from "@/components/terminal/terminal-host";
+import { RuntimeDashboardProvider } from "@/lib/hooks/use-runtime-dashboard";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +32,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <RuntimeDashboardProvider>
+            {children}
+            <TerminalHost />
+          </RuntimeDashboardProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,6 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { ReactNode } from "react";
 import type {
   LanguageMode,
   RuntimeIssue,
@@ -28,12 +38,32 @@ type RuntimeConnection = "disconnected" | "connecting" | "connected" | "reconnec
 
 let cachedSnapshot: RuntimeSnapshot | null = null;
 
+type RuntimeDashboardValue = ReturnType<typeof useRuntimeDashboardState>;
+
+const RuntimeDashboardContext = createContext<RuntimeDashboardValue | null>(null);
+
 function cacheSnapshot(snapshot: RuntimeSnapshot) {
   cachedSnapshot = snapshot;
   return snapshot;
 }
 
+export function RuntimeDashboardProvider({ children }: { children: ReactNode }) {
+  const value = useRuntimeDashboardState();
+
+  return createElement(RuntimeDashboardContext.Provider, { value }, children);
+}
+
 export function useRuntimeDashboard() {
+  const context = useContext(RuntimeDashboardContext);
+
+  if (!context) {
+    throw new Error("useRuntimeDashboard must be used within RuntimeDashboardProvider.");
+  }
+
+  return context;
+}
+
+function useRuntimeDashboardState() {
   const [snapshot, setSnapshot] = useState<RuntimeSnapshot | null>(cachedSnapshot);
   const [connection, setConnection] = useState<RuntimeConnection>("disconnected");
   const [error, setError] = useState<RuntimeIssue | null>(null);

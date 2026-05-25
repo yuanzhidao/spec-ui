@@ -275,6 +275,19 @@
     "description": "Open Projects to add local directories and load specs, changes, validation, and activity.",
     "action": "Open Projects"
   },
+  "terminal": {
+    "launcher": "Open terminal",
+    "title": "Terminal",
+    "tabs": "Terminal sessions",
+    "new": "New terminal",
+    "fullscreen": "Maximize terminal",
+    "exitFullscreen": "Restore terminal",
+    "minimize": "Minimize terminal",
+    "emptyTitle": "No terminal session",
+    "emptyDescription": "Create a terminal session in the focused project, or in your home directory when no project is focused.",
+    "contextLoading": "Loading project context before creating a terminal session.",
+    "exited": "Exited"
+  },
   "runtime": {
     "unreachable": "The local runtime is not reachable.",
     "actionFailed": "Runtime action failed."

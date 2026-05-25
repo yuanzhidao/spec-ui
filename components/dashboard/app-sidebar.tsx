@@ -27,7 +27,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
 } from "@/components/ui/sidebar";
 import { SidebarProjectSwitcherLoading } from "./loading-state";
 import { DashboardNavigation } from "./navigation";
@@ -80,8 +79,6 @@ export function AppSidebar({
       <SidebarContent>
         <DashboardNavigation active={section} />
       </SidebarContent>
-
-      <SidebarRail />
     </Sidebar>
   );
 }

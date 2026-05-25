@@ -1,0 +1,29 @@
+[[permission]]
+identifier = "allow-terminal-detect-environment"
+description = "Allows the app to detect the desktop terminal environment."
+commands.allow = ["terminal_detect_environment"]
+
+[[permission]]
+identifier = "allow-terminal-list-sessions"
+description = "Allows the app to list managed terminal sessions."
+commands.allow = ["terminal_list_sessions"]
+
+[[permission]]
+identifier = "allow-terminal-create-session"
+description = "Allows the app to create managed terminal sessions."
+commands.allow = ["terminal_create_session"]
+
+[[permission]]
+identifier = "allow-terminal-write"
+description = "Allows the app to write input to managed terminal sessions."
+commands.allow = ["terminal_write"]
+
+[[permission]]
+identifier = "allow-terminal-resize"
+description = "Allows the app to resize managed terminal sessions."
+commands.allow = ["terminal_resize"]
+
+[[permission]]
+identifier = "allow-terminal-close-session"
+description = "Allows the app to close managed terminal sessions."
+commands.allow = ["terminal_close_session"]

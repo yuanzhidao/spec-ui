@@ -275,6 +275,19 @@
     "description": "打开项目页添加本地目录，以加载 specs、changes、验证和活动。",
     "action": "打开项目"
   },
+  "terminal": {
+    "launcher": "打开终端",
+    "title": "终端",
+    "tabs": "终端会话",
+    "new": "新建终端",
+    "fullscreen": "最大化终端",
+    "exitFullscreen": "还原终端",
+    "minimize": "最小化终端",
+    "emptyTitle": "暂无终端会话",
+    "emptyDescription": "在当前项目中新建终端；如果没有当前项目，则进入用户主目录。",
+    "contextLoading": "正在加载项目上下文，完成后再创建终端会话。",
+    "exited": "已退出"
+  },
   "runtime": {
     "unreachable": "本地运行时不可访问。",
     "actionFailed": "运行时操作失败。"

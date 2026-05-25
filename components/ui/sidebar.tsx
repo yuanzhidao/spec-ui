@@ -14,9 +14,12 @@ import { cn } from "@/lib/utils";
 
 const sidebarStateCookie = "spec_ui_sidebar";
 const sidebarCookieMaxAge = 60 * 60 * 24 * 7;
-const sidebarWidth = "16rem";
+const sidebarWidth = 256;
+const sidebarWidthMin = 224;
+const sidebarWidthMax = 380;
 const sidebarWidthIcon = "3rem";
 const sidebarWidthMobile = "19rem";
+const sidebarWidthStorageKey = "spec_ui_sidebar_width";
 
 type SidebarContextValue = {
   open: boolean;
@@ -26,6 +29,10 @@ type SidebarContextValue = {
   isMobile: boolean;
   toggleSidebar: () => void;
   state: "expanded" | "collapsed";
+  width: number;
+  setWidth: (width: number) => void;
+  isResizing: boolean;
+  setIsResizing: (resizing: boolean) => void;
 };
 
 const SidebarContext = React.createContext<SidebarContextValue | null>(null);
@@ -53,6 +60,23 @@ export function SidebarProvider({
   const isMobile = useMediaQuery("(max-width: 767px)");
   const [open, setOpenState] = React.useState(defaultOpen);
   const [openMobile, setOpenMobile] = React.useState(false);
+  const [width, setWidthState] = React.useState(sidebarWidth);
+  const [isResizing, setIsResizing] = React.useState(false);
+
+  React.useEffect(() => {
+    const stored = window.localStorage.getItem(sidebarWidthStorageKey);
+    if (!stored) {
+      return;
+    }
+
+    const next = Number.parseInt(stored, 10);
+    if (Number.isFinite(next)) {
+      const frame = window.requestAnimationFrame(() => {
+        setWidthState(clampSidebarWidth(next));
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
+  }, []);
 
   const setOpen = React.useCallback((next: boolean) => {
     setOpenState(next);
@@ -67,6 +91,12 @@ export function SidebarProvider({
     setOpen(!open);
   }, [isMobile, open, setOpen]);
 
+  const setWidth = React.useCallback((next: number) => {
+    const clamped = clampSidebarWidth(next);
+    setWidthState(clamped);
+    window.localStorage.setItem(sidebarWidthStorageKey, String(clamped));
+  }, []);
+
   const value = React.useMemo<SidebarContextValue>(
     () => ({
       open,
@@ -76,8 +106,12 @@ export function SidebarProvider({
       isMobile,
       toggleSidebar,
       state: open ? "expanded" : "collapsed",
+      width,
+      setWidth,
+      isResizing,
+      setIsResizing,
     }),
-    [isMobile, open, openMobile, setOpen, toggleSidebar],
+    [isMobile, open, openMobile, setOpen, toggleSidebar, width, setWidth, isResizing],
   );
 
   return (
@@ -86,12 +120,16 @@ export function SidebarProvider({
         data-slot="sidebar-wrapper"
         style={
           {
-            "--sidebar-width": sidebarWidth,
+            "--sidebar-width": `${width}px`,
             "--sidebar-width-icon": sidebarWidthIcon,
             ...style,
           } as React.CSSProperties
         }
-        className={cn("group/sidebar-wrapper flex min-h-dvh w-full bg-sidebar", className)}
+        className={cn(
+          "group/sidebar-wrapper flex min-h-dvh w-full bg-sidebar",
+          isResizing && "select-none",
+          className,
+        )}
       >
         {children}
       </div>
@@ -142,7 +180,7 @@ export function Sidebar({
       data-slot="sidebar"
       data-state={state}
       data-collapsible={state === "collapsed" ? collapsible : ""}
-      className="group/sidebar hidden text-sidebar-foreground md:block"
+      className="group/sidebar relative hidden text-sidebar-foreground md:block"
     >
       <div
         data-slot="sidebar-gap"
@@ -166,6 +204,7 @@ export function Sidebar({
           {children}
         </div>
       </aside>
+      <SidebarRail />
     </div>
   );
 }
@@ -208,14 +247,71 @@ export function SidebarTrigger({ className }: { className?: string }) {
 }
 
 export function SidebarRail() {
-  const { toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setWidth, setIsResizing } = useSidebar();
+  const dragRef = React.useRef<{ startX: number; startWidth: number } | null>(null);
+  const didDragRef = React.useRef(false);
+
+  const onMouseDown = React.useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      didDragRef.current = false;
+      const sidebar = (event.target as HTMLElement).closest("[data-slot='sidebar']");
+      const container = sidebar?.querySelector("[data-slot='sidebar-container']");
+      if (!container) {
+        return;
+      }
+
+      dragRef.current = {
+        startX: event.clientX,
+        startWidth: container.getBoundingClientRect().width,
+      };
+      setIsResizing(true);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        if (!dragRef.current || state === "collapsed") {
+          return;
+        }
+
+        didDragRef.current = true;
+        const delta = moveEvent.clientX - dragRef.current.startX;
+        setWidth(dragRef.current.startWidth + delta);
+      };
+
+      const onMouseUp = () => {
+        dragRef.current = null;
+        setIsResizing(false);
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    },
+    [setIsResizing, setWidth, state],
+  );
+
+  const handleClick = React.useCallback(() => {
+    if (!didDragRef.current) {
+      toggleSidebar();
+    }
+  }, [toggleSidebar]);
 
   return (
     <button
       type="button"
       aria-label="Toggle sidebar"
-      onClick={toggleSidebar}
-      className="absolute inset-y-0 -right-2 hidden w-4 cursor-ew-resize opacity-0 md:block"
+      onClick={handleClick}
+      onMouseDown={onMouseDown}
+      className={cn(
+        "absolute inset-y-0 -right-4 z-40 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] after:-translate-x-1/2 hover:after:bg-sidebar-border md:block",
+        "cursor-col-resize",
+        "group-data-[collapsible=offcanvas]/sidebar:translate-x-0 group-data-[collapsible=offcanvas]/sidebar:after:left-full hover:group-data-[collapsible=offcanvas]/sidebar:bg-sidebar",
+        "group-data-[collapsible=offcanvas]/sidebar:-right-2",
+      )}
     />
   );
 }
@@ -325,4 +421,8 @@ function useMediaQuery(query: string) {
     React.useCallback(() => window.matchMedia(query).matches, [query]),
     () => false,
   );
+}
+
+function clampSidebarWidth(width: number) {
+  return Math.min(Math.max(width, sidebarWidthMin), sidebarWidthMax);
 }
