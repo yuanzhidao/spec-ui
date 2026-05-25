@@ -110,8 +110,8 @@ function copyDir(source, destination, options = {}) {
 
 function run(command, args, options = {}) {
   const { env, ...spawnOptions } = options;
-  const executable = resolveExecutable(command);
-  const result = spawnSync(executable, args, {
+  const resolved = resolveCommand(command, args);
+  const result = spawnSync(resolved.executable, resolved.args, {
     cwd: rootDir,
     env: {
       ...process.env,
@@ -136,10 +136,31 @@ function run(command, args, options = {}) {
   }
 }
 
-function resolveExecutable(command) {
-  if (process.platform === "win32" && command === "pnpm") {
-    return "pnpm.cmd";
+function resolveCommand(command, args) {
+  if (command === "pnpm" && isNodeExecutableScript(process.env.npm_execpath)) {
+    return {
+      executable: process.execPath,
+      args: [process.env.npm_execpath, ...args],
+    };
   }
 
-  return command;
+  if (process.platform === "win32" && command === "pnpm") {
+    return {
+      executable: "cmd.exe",
+      args: ["/d", "/s", "/c", command, ...args],
+    };
+  }
+
+  return {
+    executable: command,
+    args,
+  };
+}
+
+function isNodeExecutableScript(filePath) {
+  if (!filePath) {
+    return false;
+  }
+
+  return [".js", ".cjs", ".mjs"].includes(path.extname(filePath).toLowerCase());
 }
