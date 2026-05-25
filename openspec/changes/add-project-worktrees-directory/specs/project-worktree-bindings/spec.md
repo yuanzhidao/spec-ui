@@ -5,7 +5,7 @@ The system SHALL let each saved project bind one optional worktrees directory an
 
 #### Scenario: Worktrees directory is saved
 - **WHEN** the user saves a readable local directory as a project's worktrees directory
-- **THEN** the runtime persists the directory path on that project setting and refreshes project discovery
+- **THEN** the runtime persists the directory path on that project setting, refreshes project discovery, and starts watching direct child entry changes for automatic rediscovery
 
 #### Scenario: Worktrees directory is cleared
 - **WHEN** the user clears a project's saved worktrees directory
@@ -21,7 +21,7 @@ The system SHALL let each saved project bind one optional worktrees directory an
 
 #### Scenario: Settings are restored
 - **WHEN** the runtime starts with a project that has a saved worktrees directory or manual orphan worktree paths
-- **THEN** the runtime restores the settings and discovers valid worktree checkouts before projecting dashboard data
+- **THEN** the runtime restores the settings, discovers valid worktree checkouts before projecting dashboard data, and starts watching the saved worktrees directory when present
 
 ### Requirement: Worktree directory discovery
 The runtime SHALL discover project worktree checkouts by scanning only the direct child directories of the saved worktrees directory and by validating manually bound orphan worktree paths.
@@ -45,6 +45,14 @@ The runtime SHALL discover project worktree checkouts by scanning only the direc
 #### Scenario: Worktrees directory cannot be read
 - **WHEN** the saved worktrees directory is missing or unreadable
 - **THEN** the runtime reports a recoverable worktree discovery issue and keeps the saved path editable
+
+#### Scenario: Directory-derived worktree is added
+- **WHEN** a direct child directory is added under the saved worktrees directory and validates as a worktree for the same git repository
+- **THEN** the runtime rediscovers the owning project and projects the new checkout without a manual refresh
+
+#### Scenario: Directory-derived worktree is removed
+- **WHEN** a previously detected directory-derived worktree is removed from the saved worktrees directory
+- **THEN** the runtime rediscovers the owning project and removes that checkout's projected data without a manual refresh
 
 #### Scenario: Invalid orphan worktree path exists
 - **WHEN** a saved manual orphan worktree path is unreadable, missing, not a directory, not a git working tree, or belongs to another repository
@@ -78,7 +86,7 @@ The system SHALL expose worktrees directory management in each project's setting
 
 #### Scenario: User updates worktrees directory
 - **WHEN** the user saves a new worktrees directory path
-- **THEN** the UI requests the runtime to persist the path, refresh discovery, and update visible checkout data
+- **THEN** the UI requests the runtime to persist the path, refresh discovery, start automatic directory-change watching, and update visible checkout data
 
 #### Scenario: User adds orphan worktree path
 - **WHEN** the user saves a manual orphan worktree path

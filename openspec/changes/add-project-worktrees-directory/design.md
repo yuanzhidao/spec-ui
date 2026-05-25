@@ -4,7 +4,7 @@ The dashboard already supports multiple projects and monorepo OpenSpec scopes. T
 
 ## Decision: Bind a worktrees directory per project, with orphan worktree support
 
-Each project MAY store a `worktreesPath` setting. The UI SHALL expose this in the project's settings dialog as a directory path, with actions to save, refresh, and clear it.
+Each project MAY store a `worktreesPath` setting. The UI SHALL expose this in the project's settings dialog as a directory path, with actions to save and clear it.
 
 The runtime SHALL scan only direct child directories under `worktreesPath`. It SHALL NOT recursively search below the worktrees directory. This keeps discovery predictable and avoids scanning large unrelated directory trees.
 
@@ -26,15 +26,15 @@ Checkout labels SHALL prefer the git branch name. If the branch cannot be resolv
 
 ## Decision: Keep persistence minimal
 
-Settings SHALL persist the project `worktreesPath` and manual orphan worktree paths, not a full durable list of every detected worktree under the directory. Directory-derived checkouts are discovered from the current filesystem on refresh/startup. If a directory-derived worktree disappears, it stops contributing projected data after refresh. If a manually bound orphan worktree disappears, the runtime SHALL keep the saved path recoverable until the user removes it.
+Settings SHALL persist the project `worktreesPath` and manual orphan worktree paths, not a full durable list of every detected worktree under the directory. Directory-derived checkouts are discovered from the current filesystem on startup, project refresh, and saved worktrees directory changes. If a directory-derived worktree disappears, it stops contributing projected data after the automatic directory-change refresh. If a manually bound orphan worktree disappears, the runtime SHALL keep the saved path recoverable until the user removes it.
 
 The MVP SHALL NOT automatically infer or save a worktrees directory. Users must set the directory or orphan worktree paths explicitly.
 
-## Decision: Watch OpenSpec content, not arbitrary worktree roots
+## Decision: Watch OpenSpec content and the saved worktrees directory
 
 For valid checkout watchers, the runtime SHALL listen for relevant OpenSpec paths and respect ignore rules. Discovery and watcher filtering SHALL search for directories named `openspec` and SHALL apply supported `.gitignore` rules before projecting or reacting to OpenSpec content.
 
-The MVP SHALL NOT watch the worktrees directory itself for new child worktrees. Users can refresh the project to pick up newly created or removed directory-derived worktrees.
+For saved worktrees directories, the runtime SHALL listen for direct child entry changes and debounce project rediscovery, with a lightweight direct-child polling fallback when native filesystem watching is unavailable. The directory watcher SHALL NOT recursively watch every checkout file under the worktrees directory. When a child directory appears, disappears, or is renamed, the owning project SHALL rediscover valid checkouts and update the dashboard without requiring a manual refresh.
 
 ## Alternatives Considered
 

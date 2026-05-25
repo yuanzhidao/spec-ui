@@ -6,6 +6,7 @@ Feature work is developed in git worktrees, and each worktree can own its own Op
 
 - Add a per-project worktrees directory binding and a manual orphan worktree path binding.
 - Detect valid git worktrees by scanning only the worktrees directory's direct children, plus any manually saved orphan worktree paths.
+- Watch the saved worktrees directory so newly added or removed directory-derived worktrees appear without a manual refresh.
 - Treat the primary checkout and detected worktrees as checkouts under one project.
 - Aggregate Specs, Changes, Validation, and Activity from all valid checkouts for the focused project.
 - Merge same-ID Changes across checkouts, using the most recently updated checkout version as the visible primary.

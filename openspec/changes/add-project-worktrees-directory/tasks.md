@@ -17,6 +17,7 @@
 - [x] 3.3 Verify candidate directories belong to the same git common directory as the primary project.
 - [x] 3.4 Skip unreadable, missing, non-directory, non-git, and unrelated-repo children recoverably.
 - [x] 3.5 Refresh worktree discovery on project refresh and runtime startup.
+- [x] 3.6 Refresh worktree discovery automatically when the saved worktrees directory direct children change.
 
 ## 4. Realtime And Projection
 
@@ -32,7 +33,7 @@
 - [x] 5.2 Add a manual orphan worktree path control to each Project settings dialog.
 - [x] 5.3 Show detected checkout count and checkout labels in project surfaces.
 - [x] 5.4 Label Specs and Changes cards with checkout identity when a project has multiple checkouts.
-- [x] 5.5 Add clear and refresh actions for the saved worktrees directory and manual orphan paths.
+- [x] 5.5 Add clear actions for the saved worktrees directory and manual orphan paths.
 
 ## 6. Verification
 
@@ -40,3 +41,4 @@
 - [x] 6.2 Add runtime tests for direct-child worktree discovery and unrelated repo rejection.
 - [x] 6.3 Add projection tests for multi-checkout Specs aggregation and same-ID Change merging.
 - [x] 6.4 Run TypeScript typecheck, lint, unit tests, and `openspec validate --all`.
+- [x] 6.5 Add runtime coverage for automatic directory-derived worktree add/remove discovery.
