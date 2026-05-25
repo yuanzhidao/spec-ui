@@ -49,7 +49,7 @@ APIs, UI flows, runtime behavior, desktop integration, and adapter contracts may
 | Multi-project dashboard | Active MVP |
 | Monorepo scope detection | Active MVP |
 | Realtime local updates | Active MVP |
-| Desktop shell | In progress |
+| Desktop shell | Preview packaging |
 | Additional spec dialects | Planned |
 
 ## Core Features
@@ -144,6 +144,27 @@ source "$HOME/.cargo/env"
 pnpm desktop:dev
 ```
 
+## Desktop Release Artifacts
+
+Release tags use `vX.Y.Z`, starting with `v0.0.1`. The release workflow verifies project metadata, builds desktop artifacts for macOS, Windows, and Linux, uploads intermediate Actions artifacts, generates release notes from commit messages, then creates or updates a draft GitHub Release for maintainer review.
+
+Generated preview artifacts:
+
+- macOS DMG for Apple Silicon and Intel.
+- Windows NSIS installer.
+- Linux AppImage and Debian package.
+
+Desktop preview builds are unsigned. Code signing, notarization, auto-updates, updater manifests, package-manager publishing, and app-store publishing are not part of the initial release flow.
+
+Pull requests run a desktop compile workflow across macOS, Windows, and Linux targets. It prepares the desktop runtime and checks the Tauri crate without producing installer artifacts.
+
+Local packaging for the current host:
+
+```bash
+source "$HOME/.cargo/env"
+pnpm desktop:build --ci --no-sign
+```
+
 ## Development Checks
 
 ```bash
@@ -157,6 +178,7 @@ For Tauri changes:
 
 ```bash
 source "$HOME/.cargo/env"
+pnpm desktop:prepare-sidecar
 cd src-tauri
 cargo fmt --check
 cargo check

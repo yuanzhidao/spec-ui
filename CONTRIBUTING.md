@@ -32,6 +32,13 @@ source "$HOME/.cargo/env"
 pnpm desktop:dev
 ```
 
+For local desktop packaging on the current host:
+
+```bash
+source "$HOME/.cargo/env"
+pnpm desktop:build --ci --no-sign
+```
+
 ## Branches And Worktrees
 
 Use `main` as the base branch. Create a feature branch for every meaningful change.
@@ -93,10 +100,21 @@ For Tauri changes:
 
 ```bash
 source "$HOME/.cargo/env"
+pnpm desktop:prepare-sidecar
 cd src-tauri
 cargo fmt --check
 cargo check
 ```
+
+## Release Flow
+
+Release tags use `vX.Y.Z`. Before tagging, ensure `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml` all use the same version.
+
+The release workflow builds macOS DMG, Windows NSIS, Linux AppImage, and Linux Debian package artifacts. Platform jobs upload intermediate Actions artifacts first; the final job generates release notes from commit messages, then creates or updates a draft GitHub Release only after all required platform jobs pass.
+
+Pull requests run a desktop compile workflow across macOS, Windows, and Linux targets. It prepares the desktop runtime and checks the Tauri crate without producing installer artifacts.
+
+Initial desktop artifacts are unsigned preview builds. Do not add signing credentials, notarization, updater manifests, update signatures, package-manager publishing, or app-store publishing without a separate OpenSpec change.
 
 For visible UI changes, include screenshots or short recordings when practical. For runtime, parser, adapter, or settings changes, include test output or command output.
 

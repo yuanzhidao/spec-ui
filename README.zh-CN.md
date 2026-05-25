@@ -49,7 +49,7 @@ API、UI flow、runtime behavior、desktop integration 和 adapter contract 都�
 | Multi-project dashboard | Active MVP |
 | Monorepo scope detection | Active MVP |
 | Realtime local updates | Active MVP |
-| Desktop shell | In progress |
+| Desktop shell | Preview packaging |
 | Additional spec dialects | Planned |
 
 ## 核心功能
@@ -144,6 +144,27 @@ source "$HOME/.cargo/env"
 pnpm desktop:dev
 ```
 
+## 桌面端 Release 产物
+
+Release tag 使用 `vX.Y.Z`，从 `v0.0.1` 开始。release workflow 会校验项目版本元数据，构建 macOS、Windows 和 Linux 桌面端产物，先上传中间 Actions artifacts，再根据 commit messages 生成 release notes，然后创建或更新 draft GitHub Release，等待 maintainer 审核后手动发布。
+
+初期 preview 产物包括：
+
+- macOS Apple Silicon 和 Intel 的 DMG。
+- Windows NSIS installer。
+- Linux AppImage 和 Debian package。
+
+桌面端 preview build 都不签名。代码签名、公证、自动更新、updater manifest、package-manager 发布和 app-store 发布都不属于初期 release flow。
+
+Pull request 会自动运行 desktop compile workflow，覆盖 macOS、Windows 和 Linux targets。它会准备 desktop runtime 并检查 Tauri crate，但不会生成 installer artifacts。
+
+本机打包当前 host：
+
+```bash
+source "$HOME/.cargo/env"
+pnpm desktop:build --ci --no-sign
+```
+
 ## 开发检查
 
 ```bash
@@ -157,6 +178,7 @@ openspec validate --all
 
 ```bash
 source "$HOME/.cargo/env"
+pnpm desktop:prepare-sidecar
 cd src-tauri
 cargo fmt --check
 cargo check
