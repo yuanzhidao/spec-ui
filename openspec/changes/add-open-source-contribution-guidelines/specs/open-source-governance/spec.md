@@ -32,13 +32,13 @@ The repository SHALL provide a public `CONTRIBUTING.md` that explains how contri
 
 ### Requirement: Pull request template
 
-The repository SHALL provide a pull request template that asks for motivation, scope, user-visible behavior, verification evidence, screenshots or logs when relevant, dependency disclosure, breaking-change disclosure, and OpenSpec status.
+The repository SHALL provide a pull request template that asks for summary, related issue, change type, user-visible behavior, OpenSpec status, verification evidence, screenshots or recordings when relevant, dependency disclosure, breaking-change disclosure, and lightweight AI assistance disclosure.
 
 #### Scenario: Contributor opens a pull request
 
 - **WHEN** a pull request is created
 - **THEN** the template prompts the author to provide enough context for maintainer review
-- **AND** the template includes a concise checklist for tests, documentation, dependency changes, and OpenSpec status
+- **AND** the template includes a concise checklist for tests, documentation, dependency changes, OpenSpec status, and UI evidence when applicable
 
 ### Requirement: Issue templates
 
@@ -47,12 +47,13 @@ The repository SHALL provide GitHub issue templates for bug reports and feature 
 #### Scenario: User reports a bug
 
 - **WHEN** a bug report issue is opened
-- **THEN** the template asks for environment, steps to reproduce, expected behavior, actual behavior, logs or screenshots, and affected project type
+- **THEN** the template asks for environment, app mode or build source, steps to reproduce, expected behavior, actual behavior, logs or screenshots, and affected project type
 
 #### Scenario: User requests a feature
 
 - **WHEN** a feature request issue is opened
-- **THEN** the template asks for problem statement, proposed behavior, alternatives, affected workflows, and whether OpenSpec is expected
+- **THEN** the template asks for problem statement, proposed behavior, alternatives, affected workflows, and additional context
+- **AND** maintainers remain responsible for deciding whether the request needs an OpenSpec change
 
 ### Requirement: Project license
 

@@ -45,16 +45,6 @@ body:
         - Other
     validations:
       required: true
-  - type: dropdown
-    id: openspec
-    attributes:
-      label: OpenSpec likely required?
-      options:
-        - Yes
-        - No
-        - Not sure
-    validations:
-      required: true
   - type: textarea
     id: context
     attributes:
@@ -67,3 +57,4 @@ body:
       options:
         - label: I searched existing issues before opening this request.
           required: true
+        - label: I am willing to help test this workflow or submit a pull request.

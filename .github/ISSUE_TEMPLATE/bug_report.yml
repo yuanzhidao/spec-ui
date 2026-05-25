@@ -53,6 +53,33 @@ body:
         - Other
     validations:
       required: true
+  - type: dropdown
+    id: project_structure
+    attributes:
+      label: Spec/project structure
+      description: Choose the closest match for the project that exposes the issue.
+      options:
+        - OpenSpec root
+        - Monorepo with multiple OpenSpec scopes
+        - No spec structure detected
+        - Not sure
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: app_mode
+    attributes:
+      label: App mode or build source
+      description: How were you running spec-ui when the issue happened?
+      options:
+        - Web dev server
+        - Desktop preview build
+        - GitHub Release artifact
+        - Source build
+        - Not sure
+        - Other
+    validations:
+      required: true
   - type: input
     id: os
     attributes:
@@ -77,3 +104,4 @@ body:
           required: true
         - label: I did not include sensitive project data or credentials.
           required: true
+        - label: I am willing to help test a fix or submit a pull request.
