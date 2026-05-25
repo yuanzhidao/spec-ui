@@ -208,7 +208,6 @@ function DashboardShellContent({
             onRemoveProjectWorktreePath={(projectId: string, path: string) =>
               runBusy(() => runtime.removeProjectWorktreePath(projectId, path))
             }
-            onRefreshProject={(projectId?: string) => runBusy(() => runtime.refreshProject(projectId))}
             onRunValidation={() => void runtime.runValidation()}
             onThemeChange={onThemeChange}
             onLanguageChange={(language: LanguageMode) => void runtime.setLanguage(language)}

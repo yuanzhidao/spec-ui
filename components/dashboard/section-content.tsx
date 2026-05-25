@@ -31,7 +31,6 @@ export function SectionContent({
   onUpdateProjectWorktreesDirectory,
   onAddProjectWorktreePath,
   onRemoveProjectWorktreePath,
-  onRefreshProject,
   onRunValidation,
   onThemeChange,
   onLanguageChange,
@@ -56,7 +55,6 @@ export function SectionContent({
   onUpdateProjectWorktreesDirectory: (projectId: string, path: string | null) => void;
   onAddProjectWorktreePath: (projectId: string, path: string) => void;
   onRemoveProjectWorktreePath: (projectId: string, path: string) => void;
-  onRefreshProject: (projectId?: string) => void;
   onRunValidation: () => void;
   onThemeChange: (mode: ThemeMode) => void;
   onLanguageChange: (language: LanguageMode) => void;
@@ -73,7 +71,6 @@ export function SectionContent({
         onUpdateProjectWorktreesDirectory={onUpdateProjectWorktreesDirectory}
         onAddProjectWorktreePath={onAddProjectWorktreePath}
         onRemoveProjectWorktreePath={onRemoveProjectWorktreePath}
-        onRefreshProject={onRefreshProject}
       />
     );
   }

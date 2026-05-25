@@ -36,6 +36,7 @@ import {
 } from "./settings";
 import { notRunValidation, runProjectValidation, staleValidation } from "./validation";
 import { ProjectWatcher } from "./watcher";
+import { WorktreesDirectoryWatcher } from "./worktrees-watcher";
 import { discoverWorktreeCheckouts, primaryCheckoutFromBinding } from "./worktrees";
 
 type RuntimeSocket = WSContext<WebSocket>;
@@ -45,6 +46,9 @@ type ProjectRuntimeEntry = {
   issue?: RuntimeIssue;
   validation: ValidationResult;
   checkouts: CheckoutRuntimeEntry[];
+  worktreesDirectoryWatcher: WorktreesDirectoryWatcher;
+  worktreesDirectoryWatcherState: RealtimeState["watcher"];
+  worktreesDirectoryWatcherIssue?: RuntimeIssue;
 };
 
 type CheckoutRuntimeEntry = {
@@ -60,6 +64,7 @@ export class RuntimeState {
   private settingsIssue: RuntimeIssue | undefined;
   private projects = new Map<string, ProjectRuntimeEntry>();
   private clients = new Set<RuntimeSocket>();
+  private worktreesSettleTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   async initialize(): Promise<RuntimeSnapshot> {
     const result = await readSettings();
@@ -123,6 +128,7 @@ export class RuntimeState {
   async removeProject(projectPath: string): Promise<RuntimeSnapshot> {
     const entry = this.projects.get(projectPath);
     if (entry) {
+      this.clearWorktreesSettleTimer(entry.binding.id);
       await this.stopEntryWatchers(entry);
       this.projects.delete(projectPath);
     }
@@ -134,6 +140,7 @@ export class RuntimeState {
   }
 
   async relocateProject(projectId: string, projectPath: string): Promise<RuntimeSnapshot> {
+    this.clearWorktreesSettleTimer(projectId);
     const existingSetting = projectSettingById(this.settings, projectId);
     if (!existingSetting) {
       this.settingsIssue = {
@@ -186,6 +193,7 @@ export class RuntimeState {
     projectId: string,
     worktreesPath: string | null,
   ): Promise<RuntimeSnapshot> {
+    this.clearWorktreesSettleTimer(projectId);
     const setting = projectSettingById(this.settings, projectId);
     if (!setting) {
       this.settingsIssue = {
@@ -254,6 +262,7 @@ export class RuntimeState {
   }
 
   async clearProjects(): Promise<RuntimeSnapshot> {
+    this.clearWorktreesSettleTimers();
     await Promise.all(Array.from(this.projects.values()).map((entry) => this.stopEntryWatchers(entry)));
     this.projects.clear();
     this.settings = { ...this.settings, projects: [], focusedProjectId: null };
@@ -326,6 +335,7 @@ export class RuntimeState {
   }
 
   private async restoreProjects(projects: RuntimeProjectSetting[]): Promise<void> {
+    this.clearWorktreesSettleTimers();
     await Promise.all(Array.from(this.projects.values()).map((entry) => this.stopEntryWatchers(entry)));
     this.projects.clear();
 
@@ -367,6 +377,8 @@ export class RuntimeState {
         watcher: new ProjectWatcher(),
         watcherState: "idle" as const,
       })),
+      worktreesDirectoryWatcher: new WorktreesDirectoryWatcher(),
+      worktreesDirectoryWatcherState: "idle" as const,
     };
   }
 
@@ -424,7 +436,10 @@ export class RuntimeState {
   }
 
   private async startWatchers(entry: ProjectRuntimeEntry): Promise<void> {
-    await Promise.all(entry.checkouts.map((checkout) => this.startCheckoutWatcher(entry, checkout)));
+    await Promise.all([
+      ...entry.checkouts.map((checkout) => this.startCheckoutWatcher(entry, checkout)),
+      this.startWorktreesDirectoryWatcher(entry),
+    ]);
   }
 
   private async startCheckoutWatcher(
@@ -476,6 +491,79 @@ export class RuntimeState {
     void this.broadcastSnapshot();
   }
 
+  private async startWorktreesDirectoryWatcher(entry: ProjectRuntimeEntry): Promise<void> {
+    const worktreesPath = entry.binding.worktreesPath;
+    if (!worktreesPath) {
+      entry.worktreesDirectoryWatcherState = "idle";
+      return;
+    }
+
+    try {
+      await entry.worktreesDirectoryWatcher.start(
+        worktreesPath,
+        () => this.handleWorktreesDirectoryChange(entry.binding.id),
+        (error) => this.handleWorktreesDirectoryWatcherError(entry.binding.id, error),
+      );
+      entry.worktreesDirectoryWatcherState = "watching";
+    } catch (error) {
+      entry.worktreesDirectoryWatcherState = "error";
+      entry.worktreesDirectoryWatcherIssue = {
+        code: "watcher-error",
+        message: "The worktrees directory watcher could not start.",
+        detail: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  private async handleWorktreesDirectoryChange(projectId: string): Promise<void> {
+    const previous = this.entryByProjectId(projectId);
+    if (previous) {
+      previous.validation = staleValidation(previous.validation);
+    }
+
+    await this.reloadProject(projectId);
+    this.scheduleWorktreesSettleReload(projectId);
+    void this.broadcastSnapshot();
+  }
+
+  private scheduleWorktreesSettleReload(projectId: string): void {
+    this.clearWorktreesSettleTimer(projectId);
+    const timer = setTimeout(() => {
+      this.worktreesSettleTimers.delete(projectId);
+      void this.handleWorktreesSettleReload(projectId);
+    }, 2_000);
+    this.worktreesSettleTimers.set(projectId, timer);
+  }
+
+  private async handleWorktreesSettleReload(projectId: string): Promise<void> {
+    try {
+      await this.reloadProject(projectId);
+      void this.broadcastSnapshot();
+    } catch (error) {
+      this.handleWorktreesDirectoryWatcherError(
+        projectId,
+        error instanceof Error ? error : new Error(String(error)),
+      );
+    }
+  }
+
+  private clearWorktreesSettleTimer(projectId: string): void {
+    const timer = this.worktreesSettleTimers.get(projectId);
+    if (!timer) {
+      return;
+    }
+
+    clearTimeout(timer);
+    this.worktreesSettleTimers.delete(projectId);
+  }
+
+  private clearWorktreesSettleTimers(): void {
+    for (const timer of this.worktreesSettleTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.worktreesSettleTimers.clear();
+  }
+
   private async reloadProject(projectId: string): Promise<void> {
     const setting = projectSettingById(this.settings, projectId);
     if (!setting) {
@@ -510,6 +598,21 @@ export class RuntimeState {
     found.checkout.watcherIssue = {
       code: "watcher-error",
       message: "The local watcher reported an error.",
+      detail: error.message,
+    };
+    void this.broadcastSnapshot();
+  }
+
+  private handleWorktreesDirectoryWatcherError(projectId: string, error: Error): void {
+    const entry = this.entryByProjectId(projectId);
+    if (!entry) {
+      return;
+    }
+
+    entry.worktreesDirectoryWatcherState = "error";
+    entry.worktreesDirectoryWatcherIssue = {
+      code: "watcher-error",
+      message: "The worktrees directory watcher reported an error.",
       detail: error.message,
     };
     void this.broadcastSnapshot();
@@ -563,7 +666,14 @@ export class RuntimeState {
   }
 
   private async stopEntryWatchers(entry: ProjectRuntimeEntry): Promise<void> {
-    await Promise.all(entry.checkouts.map((checkout) => checkout.watcher.stop()));
+    await Promise.all([
+      ...entry.checkouts.map((checkout) => checkout.watcher.stop()),
+      entry.worktreesDirectoryWatcher.stop(),
+    ]);
+  }
+
+  private entryByProjectId(projectId: string): ProjectRuntimeEntry | undefined {
+    return Array.from(this.projects.values()).find((entry) => entry.binding.id === projectId);
   }
 
   private entryByCheckoutPath(
@@ -579,17 +689,26 @@ export class RuntimeState {
   }
 
   private entryWatcherState(entry: ProjectRuntimeEntry): RealtimeState["watcher"] {
-    if (entry.checkouts.some((checkout) => checkout.watcherState === "error")) {
+    if (
+      entry.worktreesDirectoryWatcherState === "error" ||
+      entry.checkouts.some((checkout) => checkout.watcherState === "error")
+    ) {
       return "error";
     }
-    if (entry.checkouts.some((checkout) => checkout.watcherState === "watching")) {
+    if (
+      entry.worktreesDirectoryWatcherState === "watching" ||
+      entry.checkouts.some((checkout) => checkout.watcherState === "watching")
+    ) {
       return "watching";
     }
     return "idle";
   }
 
   private entryWatcherIssue(entry: ProjectRuntimeEntry): RuntimeIssue | undefined {
-    return entry.checkouts.find((checkout) => checkout.watcherIssue)?.watcherIssue;
+    return (
+      entry.worktreesDirectoryWatcherIssue ||
+      entry.checkouts.find((checkout) => checkout.watcherIssue)?.watcherIssue
+    );
   }
 }
 

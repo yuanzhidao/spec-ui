@@ -137,15 +137,15 @@
       "localDirectory": "本地目录",
       "worktreesDirectory": "Worktrees 目录",
       "worktreesPlaceholder": "~/workspace/project-worktrees",
-      "worktreesDescription": "只扫描一级子目录；属于同一 git 仓库的目录会作为 worktree。",
+      "worktreesDescription": "只扫描并监听一级子目录；属于同一 git 仓库的目录会作为 worktree。",
       "checkouts": "Checkouts",
       "checkoutCount": "{count} 个 checkout",
+      "autoSync": "自动同步",
       "orphanWorktree": "孤立 worktree",
       "orphanPlaceholder": "~/workspace/feature-worktree",
       "addWorktree": "添加",
       "removeWorktree": "移除",
       "clear": "清空",
-      "refresh": "刷新",
       "cancel": "取消",
       "save": "保存"
     }

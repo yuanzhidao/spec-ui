@@ -12,7 +12,6 @@ import {
   Plus,
   Search,
   SlidersHorizontal,
-  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -53,7 +52,6 @@ export function ProjectsSection({
   onUpdateProjectWorktreesDirectory,
   onAddProjectWorktreePath,
   onRemoveProjectWorktreePath,
-  onRefreshProject,
 }: {
   data: DashboardData;
   busy: boolean;
@@ -64,7 +62,6 @@ export function ProjectsSection({
   onUpdateProjectWorktreesDirectory: (projectId: string, path: string | null) => void;
   onAddProjectWorktreePath: (projectId: string, path: string) => void;
   onRemoveProjectWorktreePath: (projectId: string, path: string) => void;
-  onRefreshProject: (projectId?: string) => void;
 }) {
   const t = useTranslations("projects");
   const navigation = useNavigation();
@@ -168,7 +165,6 @@ export function ProjectsSection({
               onUpdateProjectWorktreesDirectory={onUpdateProjectWorktreesDirectory}
               onAddProjectWorktreePath={onAddProjectWorktreePath}
               onRemoveProjectWorktreePath={onRemoveProjectWorktreePath}
-              onRefreshProject={onRefreshProject}
             />
           ))}
         </div>
@@ -187,7 +183,6 @@ export function ProjectsSection({
               onUpdateProjectWorktreesDirectory={onUpdateProjectWorktreesDirectory}
               onAddProjectWorktreePath={onAddProjectWorktreePath}
               onRemoveProjectWorktreePath={onRemoveProjectWorktreePath}
-              onRefreshProject={onRefreshProject}
             />
           ))}
         </div>
@@ -207,7 +202,6 @@ function ProjectCard({
   onUpdateProjectWorktreesDirectory,
   onAddProjectWorktreePath,
   onRemoveProjectWorktreePath,
-  onRefreshProject,
 }: {
   project: DashboardData["projects"][number];
   focused: boolean;
@@ -219,7 +213,6 @@ function ProjectCard({
   onUpdateProjectWorktreesDirectory: (projectId: string, path: string | null) => void;
   onAddProjectWorktreePath: (projectId: string, path: string) => void;
   onRemoveProjectWorktreePath: (projectId: string, path: string) => void;
-  onRefreshProject: (projectId?: string) => void;
 }) {
   const t = useTranslations("projects");
   const progress = projectChangeProgress(project);
@@ -251,7 +244,6 @@ function ProjectCard({
           onUpdateProjectWorktreesDirectory={onUpdateProjectWorktreesDirectory}
           onAddProjectWorktreePath={onAddProjectWorktreePath}
           onRemoveProjectWorktreePath={onRemoveProjectWorktreePath}
-          onRefreshProject={onRefreshProject}
         />
       </div>
       <button
@@ -301,7 +293,6 @@ function ProjectListRow({
   onUpdateProjectWorktreesDirectory,
   onAddProjectWorktreePath,
   onRemoveProjectWorktreePath,
-  onRefreshProject,
 }: {
   project: DashboardData["projects"][number];
   focused: boolean;
@@ -313,7 +304,6 @@ function ProjectListRow({
   onUpdateProjectWorktreesDirectory: (projectId: string, path: string | null) => void;
   onAddProjectWorktreePath: (projectId: string, path: string) => void;
   onRemoveProjectWorktreePath: (projectId: string, path: string) => void;
-  onRefreshProject: (projectId?: string) => void;
 }) {
   const t = useTranslations("projects");
   const progress = projectChangeProgress(project);
@@ -361,7 +351,6 @@ function ProjectListRow({
         onUpdateProjectWorktreesDirectory={onUpdateProjectWorktreesDirectory}
         onAddProjectWorktreePath={onAddProjectWorktreePath}
         onRemoveProjectWorktreePath={onRemoveProjectWorktreePath}
-        onRefreshProject={onRefreshProject}
       />
     </div>
   );
@@ -377,7 +366,6 @@ function ProjectActions({
   onUpdateProjectWorktreesDirectory,
   onAddProjectWorktreePath,
   onRemoveProjectWorktreePath,
-  onRefreshProject,
 }: {
   project: DashboardData["projects"][number];
   focused: boolean;
@@ -388,7 +376,6 @@ function ProjectActions({
   onUpdateProjectWorktreesDirectory: (projectId: string, path: string | null) => void;
   onAddProjectWorktreePath: (projectId: string, path: string) => void;
   onRemoveProjectWorktreePath: (projectId: string, path: string) => void;
-  onRefreshProject: (projectId?: string) => void;
 }) {
   const t = useTranslations("projects.actions");
 
@@ -411,7 +398,6 @@ function ProjectActions({
         onUpdateProjectWorktreesDirectory={onUpdateProjectWorktreesDirectory}
         onAddProjectWorktreePath={onAddProjectWorktreePath}
         onRemoveProjectWorktreePath={onRemoveProjectWorktreePath}
-        onRefreshProject={onRefreshProject}
       />
       <RemoveProjectDialog project={project} busy={busy} onRemoveProject={onRemoveProject} />
     </div>
@@ -475,7 +461,6 @@ function ProjectSettingsDialog({
   onUpdateProjectWorktreesDirectory,
   onAddProjectWorktreePath,
   onRemoveProjectWorktreePath,
-  onRefreshProject,
 }: {
   project: DashboardData["projects"][number];
   busy: boolean;
@@ -483,7 +468,6 @@ function ProjectSettingsDialog({
   onUpdateProjectWorktreesDirectory: (projectId: string, path: string | null) => void;
   onAddProjectWorktreePath: (projectId: string, path: string) => void;
   onRemoveProjectWorktreePath: (projectId: string, path: string) => void;
-  onRefreshProject: (projectId?: string) => void;
 }) {
   const t = useTranslations("projects.settings");
   const [open, setOpen] = useState(false);
@@ -592,16 +576,11 @@ function ProjectSettingsDialog({
                   {t("checkoutCount", { count: project.checkouts.length })}
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={busy}
-                onClick={() => onRefreshProject(project.project.id)}
-              >
-                <RefreshCw className="size-3.5" />
-                {t("refresh")}
-              </Button>
+              {project.project.worktreesPath ? (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                  {t("autoSync")}
+                </span>
+              ) : null}
             </div>
             <div className="space-y-1.5">
               {project.checkouts.map((checkout) => (
