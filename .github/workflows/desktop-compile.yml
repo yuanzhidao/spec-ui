@@ -78,7 +78,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Prepare desktop runtime
+      - name: Prepare desktop renderer
         env:
           TAURI_ENV_TARGET_TRIPLE: ${{ matrix.target }}
         run: pnpm desktop:prepare

@@ -14,26 +14,26 @@
 ## 3. Desktop Production Packaging
 
 - [x] 3.1 Replace the production desktop build placeholder with a real packaging path.
-- [x] 3.2 Build the Next.js production server bundle for desktop use.
-- [x] 3.3 Embed the Node runtime pieces required by the packaged desktop app.
-- [x] 3.4 Package the local runtime server with the desktop app.
+- [x] 3.2 Build static desktop renderer assets for Tauri production use.
+- [x] 3.3 Remove Node sidecar embedding from the desktop release startup path.
+- [x] 3.4 Use Rust-owned Tauri commands/events for packaged desktop runtime behavior.
 - [x] 3.5 Ensure users do not need a preinstalled Node.js runtime.
 - [x] 3.6 Configure macOS DMG artifacts for `aarch64` and `x86_64` without universal binaries.
 - [x] 3.7 Configure Windows NSIS `.exe` artifacts.
-- [x] 3.8 Configure Linux AppImage and Debian package artifacts.
+- [x] 3.8 Defer Linux release packaging while retaining Linux desktop compile checks.
 - [x] 3.9 Do not configure RPM artifacts in this change.
-- [x] 3.10 Add managed startup for the web server and runtime server.
-- [x] 3.11 Coordinate loopback ports through environment variables.
-- [x] 3.12 Keep production runtime CORS allowlists explicit.
-- [x] 3.13 Ensure child processes shut down when the desktop app exits.
-- [x] 3.14 Use official target-specific Node runtime downloads for desktop sidecars.
+- [x] 3.10 Remove managed web/runtime server startup from the packaged desktop app.
+- [x] 3.11 Avoid desktop startup dependency on loopback web/runtime ports.
+- [x] 3.12 Keep Web runtime CORS rules explicit outside the desktop startup path.
+- [x] 3.13 Ensure terminal child processes shut down when the desktop app exits.
+- [x] 3.14 Ensure packaged desktop startup does not require a preinstalled Node.js runtime.
 
 ## 4. CI Release Flow
 
 - [x] 4.1 Add a tag-triggered GitHub Release workflow for `vX.Y.Z`.
 - [x] 4.2 Validate strict semver tags before release artifact packaging.
 - [x] 4.3 Run web, runtime, OpenSpec, and Rust verification before release packaging.
-- [x] 4.4 Build macOS, Windows, and Linux desktop artifacts.
+- [x] 4.4 Build macOS and Windows desktop release artifacts, with Linux compile checks retained separately.
 - [x] 4.5 Upload platform build outputs as intermediate Actions artifacts.
 - [x] 4.6 Add a final aggregation job that verifies the complete expected artifact set before creating or updating the draft GitHub Release.
 - [x] 4.7 Make draft release aggregation idempotent by replacing same-named assets on repeated tag runs.

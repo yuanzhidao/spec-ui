@@ -77,9 +77,6 @@ jobs:
         working-directory: src-tauri
         run: cargo fmt --check
 
-      - name: Prepare Node sidecar for Rust check
-        run: pnpm desktop:prepare-sidecar
-
       - name: Rust check
         working-directory: src-tauri
         run: cargo check

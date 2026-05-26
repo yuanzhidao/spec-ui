@@ -16,23 +16,22 @@ The final aggregation job SHALL be idempotent for repeated runs of the same tag.
 
 The GitHub Release publishing job SHALL run only on the canonical upstream repository, currently `yuanzhidao/spec-ui`. Forks may run verification and desktop compile checks, but they SHALL NOT create or mutate upstream GitHub Releases.
 
-## Decision: Build all desktop platforms
+## Decision: Build releasable desktop platforms
 
-The release workflow SHALL build macOS, Windows, and Linux artifacts through a platform matrix. Platform-specific setup, including Linux WebView and bundler dependencies, SHALL be explicit in CI so a new maintainer can understand the required environment.
+The release workflow SHALL build macOS and Windows artifacts through a platform matrix. Linux desktop compile checks SHALL remain in pull-request CI, but Linux release packaging SHALL stay disabled until the AppImage/Deb bundling path is stable enough for the project to support.
 
 The initial artifact set SHALL be:
 
 - macOS: DMG for `aarch64` and `x86_64`.
 - Windows: NSIS `.exe` installer.
-- Linux: AppImage and Debian package.
 
-macOS universal binaries SHALL NOT be produced in this change. RPM packages SHALL NOT be produced in this change.
+macOS universal binaries SHALL NOT be produced in this change. Linux AppImage, Debian, and RPM packages SHALL NOT be produced in this change.
 
-## Decision: Keep Next server packaging
+## Decision: Use static Tauri renderer packaging for 0.0.1
 
-The desktop production app SHALL keep the Next.js server model instead of using static export. Dynamic routes and local runtime behavior are part of the product model, so the packaged desktop app SHALL launch a local Next server and the local runtime server as managed processes.
+The `0.0.1` desktop production app SHALL use Tauri static renderer packaging. The packaged app SHALL load local renderer assets through `frontendDist` and SHALL NOT launch a bundled Next.js server for desktop UI startup.
 
-The implementation SHALL embed the Node runtime pieces needed by the desktop app as sidecar or equivalent managed processes. Release builds SHALL use official Node runtime downloads for the target platform and architecture instead of copying the CI runner's current Node executable. Users SHALL NOT need to install Node.js before launching the packaged desktop app. The MVP SHALL NOT rewrite the runtime in Rust.
+Desktop-local runtime behavior SHALL be owned by the Tauri Rust process through commands and events. Release builds SHALL NOT embed Node runtime pieces, npm staging `node_modules`, a Hono runtime server, or other managed local server processes for desktop startup. Users SHALL NOT need to install Node.js before launching the packaged desktop app.
 
 ## Decision: Manual version update for 0.0.1
 
@@ -42,24 +41,24 @@ The first release SHALL update version metadata manually to `0.0.1`. A dedicated
 
 The first release SHALL generate draft release notes from git commit messages in the release range. The generator SHALL use the previous reachable tag as the start of the range when one exists, and SHALL use all commits reachable from the release tag for the first release. A maintainer SHALL review and edit those notes before publishing the draft. A structured changelog source and changelog page are intentionally deferred to a later change.
 
-## Decision: Coordinate local ports at startup
+## Decision: Avoid desktop startup ports
 
-The packaged desktop app SHALL avoid assuming that fixed ports are always free. Startup SHOULD allocate or validate loopback ports for the web server and runtime server, pass them through environment variables, and open the Tauri window only after the services are ready.
+The packaged desktop app SHALL avoid local web/runtime startup ports. It SHALL open the static Tauri renderer directly and use Tauri commands/events for local project, settings, watcher, validation, and terminal behavior.
 
-Runtime CORS rules SHALL remain explicit. The production desktop origin and loopback runtime origin SHALL be allowed without using a wildcard.
+Runtime CORS rules remain relevant to the Web target's local runtime server, but they SHALL NOT be required for desktop app startup.
 
 ## Decision: Unsigned preview artifacts on every platform
 
-The `0.0.1` release flow SHALL produce unsigned macOS, Windows, and Linux artifacts. Code signing, notarization, certificate handling, and release identity secrets SHALL be handled by a later change. Documentation SHALL make the unsigned preview status clear enough that testers know platform warnings are expected.
+The `0.0.1` release flow SHALL produce unsigned macOS and Windows artifacts. Code signing, notarization, certificate handling, and release identity secrets SHALL be handled by a later change. Documentation SHALL make the unsigned preview status clear enough that testers know platform warnings are expected.
 
 ## Decision: Pull-request desktop compile workflow
 
-In addition to the tag-triggered release workflow, the project SHOULD provide a pull-request desktop compile workflow. It SHALL prepare the desktop runtime and run Rust/Tauri compile checks across macOS, Windows, and Linux targets without producing installer artifacts, uploading Actions artifacts, or mutating a GitHub Release.
+In addition to the tag-triggered release workflow, the project SHOULD provide a pull-request desktop compile workflow. It SHALL prepare the desktop renderer and run Rust/Tauri compile checks across macOS, Windows, and Linux targets without producing installer artifacts, uploading Actions artifacts, or mutating a GitHub Release.
 
 ## Risks
 
-- Packaging a Next.js server inside a desktop app is more complex than static export.
-- Node sidecar packaging can increase artifact size and platform-specific edge cases.
+- Static desktop routing and shared UI boundaries need careful regression testing because the Web target still uses Next.js routing.
+- Rust-owned runtime command coverage must stay aligned with the Web runtime contract.
 - Cross-platform desktop builds can fail on native system dependencies even when web checks pass.
 - Unsigned macOS and Windows artifacts can trigger expected platform warnings.
-- Port coordination and process shutdown need careful handling to avoid orphaned local processes.
+- Linux packaging remains deferred until the bundling path is stable.

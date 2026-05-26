@@ -31,9 +31,9 @@ The system SHALL provide a GitHub Release workflow that starts from strict semve
 - **THEN** the release workflow fails before publishing artifacts
 - **AND** no GitHub Release artifacts are uploaded
 
-### Requirement: Cross-platform desktop artifacts
+### Requirement: Cross-platform desktop release artifacts
 
-The system SHALL build desktop release artifacts for macOS, Windows, and Linux.
+The system SHALL build desktop release artifacts for macOS and Windows. Linux desktop compile checks SHALL remain available, but Linux release artifacts are deferred in this change.
 
 #### Scenario: Platform jobs upload intermediate artifacts
 
@@ -45,7 +45,7 @@ The system SHALL build desktop release artifacts for macOS, Windows, and Linux.
 
 - **WHEN** all required platform packaging jobs complete successfully
 - **THEN** the final aggregation job verifies the complete expected artifact set
-- **AND** macOS, Windows, and Linux artifacts are attached to a draft GitHub Release
+- **AND** macOS and Windows artifacts are attached to a draft GitHub Release
 - **AND** artifact names include the app name, release version, platform, and architecture where available
 - **AND** a maintainer can review the draft before publishing it
 
@@ -79,8 +79,8 @@ The system SHALL build desktop release artifacts for macOS, Windows, and Linux.
 - **THEN** macOS DMG artifacts exist for `aarch64` and `x86_64`
 - **AND** no macOS universal artifact is required
 - **AND** a Windows NSIS `.exe` artifact exists
-- **AND** Linux AppImage and Debian package artifacts exist
-- **AND** no RPM artifact is required
+- **AND** Linux release artifacts are not required in this change
+- **AND** no AppImage, Debian, or RPM artifact is required
 
 #### Scenario: Forks do not publish releases
 
@@ -93,43 +93,43 @@ The system SHALL build desktop release artifacts for macOS, Windows, and Linux.
 - **WHEN** the release workflow runs in `yuanzhidao/spec-ui`
 - **THEN** the final aggregation job may create or update a draft GitHub Release after all required checks pass
 
-### Requirement: Next server desktop runtime
+### Requirement: Static Tauri desktop runtime
 
-The packaged desktop app SHALL run the existing Next.js server and local runtime server instead of using static export.
+For the `0.0.1` release path captured by this change, the packaged desktop app SHALL load static renderer assets through Tauri and SHALL NOT require a bundled Next.js server, Hono runtime server, Node sidecar, or npm staging `node_modules` for desktop startup.
 
-#### Scenario: Desktop app starts bundled services
+#### Scenario: Desktop app opens static renderer
 
 - **WHEN** a user launches the packaged desktop app
-- **THEN** the app starts the bundled Next.js server
-- **AND** the app starts the bundled local runtime server
-- **AND** the app uses embedded target-specific Node runtime pieces instead of requiring Node.js to be preinstalled on the user's machine
-- **AND** the Tauri window opens only after the local services are ready
+- **THEN** the Tauri window loads local static renderer assets
+- **AND** no bundled Next.js server is started for desktop UI rendering
+- **AND** no Hono runtime server or Node sidecar is started for desktop runtime behavior
+- **AND** the user does not need Node.js installed to launch the packaged desktop app
 
-#### Scenario: Dynamic routes remain available
+#### Scenario: Desktop runtime uses native bridge
 
-- **WHEN** a user opens route-backed pages in the packaged desktop app
-- **THEN** the pages are served by the bundled Next.js server
-- **AND** the desktop build does not depend on static export routing
+- **WHEN** the desktop renderer needs local project, settings, watcher, validation, or terminal behavior
+- **THEN** it invokes Tauri commands or listens to Tauri events
+- **AND** it does not call a local Hono HTTP or WebSocket endpoint for desktop runtime behavior
 
-### Requirement: Managed local ports
+### Requirement: No desktop startup ports
 
-The packaged desktop app SHALL coordinate local loopback ports for its bundled services.
+For the `0.0.1` release path captured by this change, the packaged desktop app SHALL not require local web or runtime ports for app startup.
 
-#### Scenario: Startup avoids fixed-port conflicts
+#### Scenario: Startup avoids loopback server dependency
 
 - **WHEN** the packaged desktop app starts
-- **THEN** it validates or selects loopback ports for the web server and runtime server
-- **AND** it passes the selected ports to the managed processes through environment variables
+- **THEN** it does not bind a loopback port for UI rendering
+- **AND** it does not bind a loopback port for desktop runtime APIs
 
-#### Scenario: Runtime origin is explicitly allowed
+#### Scenario: Web runtime remains separate
 
-- **WHEN** the packaged desktop app starts the local runtime
-- **THEN** the runtime CORS allowlist includes the desktop production origin and selected loopback origin
-- **AND** the runtime does not use a wildcard origin for desktop production
+- **WHEN** the Web target runs with its local runtime server
+- **THEN** runtime CORS rules remain explicit for the Web runtime path
+- **AND** those Web runtime CORS rules are not required for desktop startup
 
 ### Requirement: Unsigned preview release
 
-The initial release flow SHALL produce unsigned preview artifacts for macOS, Windows, and Linux.
+The initial release flow SHALL produce unsigned preview artifacts for macOS and Windows.
 
 #### Scenario: Unsigned artifacts are documented
 
@@ -178,7 +178,7 @@ The system SHALL provide a pull-request desktop compile workflow that checks des
 #### Scenario: Pull request checks desktop compilation
 
 - **WHEN** a pull request opens or updates
-- **THEN** the desktop compile workflow prepares the desktop runtime for macOS, Windows, and Linux targets where CI runners are available
+- **THEN** the desktop compile workflow prepares the desktop renderer for macOS, Windows, and Linux targets where CI runners are available
 - **AND** it runs Rust/Tauri compile checks for those targets
 - **AND** it does not build installer artifacts
 - **AND** it does not upload release artifacts as Actions artifacts
