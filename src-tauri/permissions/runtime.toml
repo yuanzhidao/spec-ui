@@ -1,0 +1,74 @@
+[[permission]]
+identifier = "allow-runtime-snapshot"
+description = "Allows the app to read the runtime dashboard snapshot."
+commands.allow = ["runtime_snapshot"]
+
+[[permission]]
+identifier = "allow-runtime-add-project"
+description = "Allows the app to add a local project."
+commands.allow = ["runtime_add_project"]
+
+[[permission]]
+identifier = "allow-runtime-focus-project"
+description = "Allows the app to focus or clear a local project focus."
+commands.allow = ["runtime_focus_project"]
+
+[[permission]]
+identifier = "allow-runtime-remove-project"
+description = "Allows the app to remove a local project."
+commands.allow = ["runtime_remove_project"]
+
+[[permission]]
+identifier = "allow-runtime-clear-projects"
+description = "Allows the app to clear local projects."
+commands.allow = ["runtime_clear_projects"]
+
+[[permission]]
+identifier = "allow-runtime-relocate-project"
+description = "Allows the app to update a local project path."
+commands.allow = ["runtime_relocate_project"]
+
+[[permission]]
+identifier = "allow-runtime-update-project-workspace-directory"
+description = "Allows the app to update a project workspace directory."
+commands.allow = ["runtime_update_project_workspace_directory"]
+
+[[permission]]
+identifier = "allow-runtime-update-project-worktrees-directory"
+description = "Allows the app to update a project worktrees directory."
+commands.allow = ["runtime_update_project_worktrees_directory"]
+
+[[permission]]
+identifier = "allow-runtime-add-project-worktree-path"
+description = "Allows the app to add a manual project worktree path."
+commands.allow = ["runtime_add_project_worktree_path"]
+
+[[permission]]
+identifier = "allow-runtime-remove-project-worktree-path"
+description = "Allows the app to remove a manual project worktree path."
+commands.allow = ["runtime_remove_project_worktree_path"]
+
+[[permission]]
+identifier = "allow-runtime-refresh-project"
+description = "Allows the app to refresh project runtime data."
+commands.allow = ["runtime_refresh_project"]
+
+[[permission]]
+identifier = "allow-runtime-set-change-task-completed"
+description = "Allows the app to update OpenSpec task completion state."
+commands.allow = ["runtime_set_change_task_completed"]
+
+[[permission]]
+identifier = "allow-runtime-set-theme"
+description = "Allows the app to update theme preference."
+commands.allow = ["runtime_set_theme"]
+
+[[permission]]
+identifier = "allow-runtime-set-language"
+description = "Allows the app to update language preference."
+commands.allow = ["runtime_set_language"]
+
+[[permission]]
+identifier = "allow-runtime-run-validation"
+description = "Allows the app to run project validation."
+commands.allow = ["runtime_run_validation"]

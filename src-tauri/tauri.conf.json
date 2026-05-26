@@ -4,9 +4,9 @@
   "version": "0.0.1",
   "identifier": "io.github.yuanzhidao.spec-ui",
   "build": {
-    "frontendDist": "desktop-build-disabled",
-    "devUrl": "http://localhost:3000",
-    "beforeDevCommand": "pnpm dev",
+    "frontendDist": "../apps/desktop/dist",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeDevCommand": "pnpm dev:desktop-renderer",
     "beforeBuildCommand": "pnpm desktop:prepare"
   },
   "app": {
@@ -29,12 +29,8 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "externalBin": [
-      "binaries/spec-ui-node"
-    ],
-    "resources": [
-      "desktop-runtime/"
-    ],
+    "externalBin": [],
+    "resources": [],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
