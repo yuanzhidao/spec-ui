@@ -10,7 +10,7 @@ import type {
   NormalizedRequirement,
   NormalizedSpec,
   SpecScope,
-} from "@/lib/dashboard-types";
+} from "@spec-ui/core/dashboard/types";
 import type { SpecDialectAdapter } from "./types";
 
 const requirementPrefix = "### Requirement:";
@@ -177,7 +177,8 @@ async function readChangeEntries(
         readDeltaSpecs(changePath),
         readMarkdownFiles(changePath),
       ]);
-      const parsedTasks = tasks ? parseTasks(tasks) : [];
+      const tasksPath = path.join(changePath, "tasks.md");
+      const parsedTasks = tasks ? parseTasks(tasks, tasksPath) : [];
       const proposalContent = proposal || "";
       const proposalSections = parseProposalSections(proposalContent);
 
@@ -409,12 +410,12 @@ function extractRequirements(
     });
 }
 
-function parseTasks(text: string): NormalizedChangeTask[] {
+function parseTasks(text: string, sourcePath: string): NormalizedChangeTask[] {
   let section: string | undefined;
   let index = 0;
   const tasks: NormalizedChangeTask[] = [];
 
-  for (const rawLine of text.split("\n")) {
+  for (const [lineIndex, rawLine] of text.split(/\r?\n/).entries()) {
     const line = rawLine.trim();
     const heading = line.match(/^#+\s+(.+)$/);
     if (heading) {
@@ -422,7 +423,7 @@ function parseTasks(text: string): NormalizedChangeTask[] {
       continue;
     }
 
-    const task = line.match(/^- \[([ xX])\]\s+(.+)$/);
+    const task = rawLine.match(/^\s*[-*]\s+\[([ xX])\]\s+(.+)$/);
     if (!task) {
       continue;
     }
@@ -432,6 +433,8 @@ function parseTasks(text: string): NormalizedChangeTask[] {
       id: `task-${index}`,
       text: task[2].trim(),
       completed: task[1].toLowerCase() === "x",
+      sourcePath,
+      lineNumber: lineIndex + 1,
       section,
     });
   }

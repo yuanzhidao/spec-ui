@@ -5,6 +5,12 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   "http://[::1]:3000",
+  "http://localhost:1420",
+  "http://127.0.0.1:1420",
+  "http://[::1]:1420",
+  "http://tauri.localhost",
+  "https://tauri.localhost",
+  "tauri://localhost",
 ];
 
 export function runtimePort(): number {

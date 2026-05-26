@@ -1,6 +1,6 @@
 import path from "node:path";
 import watcher from "@parcel/watcher";
-import type { ProjectBinding, ProjectEvent } from "@/lib/dashboard-types";
+import type { ProjectBinding, ProjectEvent } from "@spec-ui/core/dashboard/types";
 import { projectWatcherIgnorePatterns } from "./project";
 
 type Subscription = Awaited<ReturnType<typeof watcher.subscribe>>;

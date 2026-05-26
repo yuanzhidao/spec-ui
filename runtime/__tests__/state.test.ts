@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -24,6 +24,10 @@ async function fixtureProject(name: string) {
   await writeFile(
     path.join(projectPath, "openspec", "changes", `change-${name}`, "proposal.md"),
     `# ${name} change\n`,
+  );
+  await writeFile(
+    path.join(projectPath, "openspec", "changes", `change-${name}`, "tasks.md"),
+    "- [ ] Build\n- [x] Verify\n",
   );
 
   return projectPath;
@@ -98,7 +102,11 @@ describe("RuntimeState project collection", () => {
     await state.relocateProject(projectId, newPath);
     snapshot = await state.snapshot();
 
-    expect(snapshot.settings.projects).toEqual([{ id: projectId, path: newPath, worktreePaths: [] }]);
+    expect(snapshot.settings.projects[0]).toMatchObject({
+      id: projectId,
+      path: newPath,
+      worktreePaths: [],
+    });
     expect(snapshot.settings.focusedProjectId).toBe(projectId);
     expect(snapshot.dashboard.projects).toHaveLength(1);
     expect(snapshot.dashboard.projects[0].project.id).toBe(projectId);
@@ -132,6 +140,34 @@ describe("RuntimeState project collection", () => {
     expect(snapshot.settings.projects[0].worktreePaths).toEqual([]);
   });
 
+  it("uses a saved workspace directory as the focused project path", async () => {
+    await tempHome();
+    const state = new RuntimeState();
+    await state.initialize();
+    const projectPath = await fixtureProject("alpha");
+    const workspacePath = await mkdtemp(path.join(tmpdir(), "spec-ui-workspace-"));
+
+    await state.addProject(projectPath);
+    let snapshot = await state.snapshot();
+    const projectId = snapshot.settings.projects[0].id;
+
+    await state.updateProjectWorkspacePath(projectId, workspacePath);
+    snapshot = await state.snapshot();
+
+    expect(snapshot.settings.projects[0]).toMatchObject({
+      id: projectId,
+      path: projectPath,
+      workspacePath,
+    });
+    expect(snapshot.dashboard.projects[0].project.workspacePath).toBe(workspacePath);
+    expect(snapshot.dashboard.focusedProjectPath).toBe(workspacePath);
+
+    await state.updateProjectWorkspacePath(projectId, null);
+    snapshot = await state.snapshot();
+    expect(snapshot.settings.projects[0].workspacePath).toBeUndefined();
+    expect(snapshot.dashboard.focusedProjectPath).toBe(projectPath);
+  });
+
   it("refreshes an explicitly selected project even when another project is focused", async () => {
     await tempHome();
     const state = new RuntimeState();
@@ -161,5 +197,39 @@ describe("RuntimeState project collection", () => {
     const betaProject = snapshot.dashboard.projects.find((project) => project.project.id === betaId);
 
     expect(betaProject?.scopes.map((scope) => scope.id).sort()).toEqual(["apps_web", "root"]);
+  });
+
+  it("updates OpenSpec task completion in tasks.md", async () => {
+    await tempHome();
+    const state = new RuntimeState();
+    await state.initialize();
+    const projectPath = await fixtureProject("alpha");
+    const tasksPath = path.join(
+      projectPath,
+      "openspec",
+      "changes",
+      "change-alpha",
+      "tasks.md",
+    );
+
+    await state.addProject(projectPath);
+    let snapshot = await state.snapshot();
+    const task = snapshot.dashboard.changes[0].detail?.tasks[0];
+    if (!task) {
+      throw new Error("Expected fixture task");
+    }
+
+    await state.setChangeTaskCompleted({
+      sourcePath: task.sourcePath,
+      lineNumber: task.lineNumber,
+      completed: true,
+    });
+
+    expect(await readFile(tasksPath, "utf8")).toBe("- [x] Build\n- [x] Verify\n");
+    snapshot = await state.snapshot();
+    expect(snapshot.dashboard.changes[0].taskSummary).toEqual({
+      total: 2,
+      completed: 2,
+    });
   });
 });

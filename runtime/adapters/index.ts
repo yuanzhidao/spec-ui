@@ -11,7 +11,7 @@ import type {
   RuntimeIssue,
   SpecScope,
   ValidationResult,
-} from "@/lib/dashboard-types";
+} from "@spec-ui/core/dashboard/types";
 import { openSpecAdapter } from "./openspec";
 
 export async function projectDashboardData(

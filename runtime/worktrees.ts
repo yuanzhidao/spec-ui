@@ -10,7 +10,7 @@ import type {
   ProjectCheckoutSource,
   RuntimeIssue,
   RuntimeProjectSetting,
-} from "@/lib/dashboard-types";
+} from "@spec-ui/core/dashboard/types";
 import { discoverProject, expandProjectPath } from "./project";
 
 const execFileAsync = promisify(execFile);

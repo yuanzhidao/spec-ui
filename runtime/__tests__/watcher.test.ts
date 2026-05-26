@@ -1,6 +1,6 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { ProjectBinding } from "@/lib/dashboard-types";
+import type { ProjectBinding } from "@spec-ui/core/dashboard/types";
 import { normalizeWatcherEvent } from "../watcher";
 
 const binding: ProjectBinding = {

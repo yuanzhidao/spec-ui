@@ -2,6 +2,7 @@ import type { WSContext } from "hono/ws";
 import path from "node:path";
 import type { WebSocket } from "ws";
 import type {
+  ChangeTaskCompletionUpdate,
   DashboardData,
   DashboardProject,
   LanguageMode,
@@ -15,7 +16,7 @@ import type {
   RuntimeSnapshot,
   ThemeMode,
   ValidationResult,
-} from "@/lib/dashboard-types";
+} from "@spec-ui/core/dashboard/types";
 import { projectDashboardData } from "./adapters";
 import { discoverProject, expandProjectPath } from "./project";
 import {
@@ -28,6 +29,7 @@ import {
   removeProjectPath,
   removeProjectWorktreePath,
   updateProjectPath,
+  updateProjectWorkspacePath,
   updateProjectWorktreesPath,
   withFocusedProjectId,
   withLanguage,
@@ -38,6 +40,7 @@ import { notRunValidation, runProjectValidation, staleValidation } from "./valid
 import { ProjectWatcher } from "./watcher";
 import { WorktreesDirectoryWatcher } from "./worktrees-watcher";
 import { discoverWorktreeCheckouts, primaryCheckoutFromBinding } from "./worktrees";
+import { validateTaskSourcePath, writeTaskCompletion } from "./tasks";
 
 type RuntimeSocket = WSContext<WebSocket>;
 
@@ -189,6 +192,31 @@ export class RuntimeState {
     return this.snapshot();
   }
 
+  async updateProjectWorkspacePath(
+    projectId: string,
+    workspacePath: string | null,
+  ): Promise<RuntimeSnapshot> {
+    const setting = projectSettingById(this.settings, projectId);
+    if (!setting) {
+      this.settingsIssue = {
+        code: "missing-path",
+        message: "The project is not available.",
+      };
+      return this.snapshot();
+    }
+
+    this.settings = updateProjectWorkspacePath(
+      this.settings,
+      projectId,
+      workspacePath ? normalizeUserPath(workspacePath) : null,
+    );
+    await writeSettings(this.settings);
+    await this.reloadProject(projectId);
+    this.settingsIssue = undefined;
+    void this.broadcastSnapshot();
+    return this.snapshot();
+  }
+
   async updateProjectWorktreesPath(
     projectId: string,
     worktreesPath: string | null,
@@ -288,6 +316,40 @@ export class RuntimeState {
     return this.snapshot();
   }
 
+  async setChangeTaskCompleted(
+    update: ChangeTaskCompletionUpdate,
+  ): Promise<RuntimeSnapshot> {
+    const found = this.entryByTaskSourcePath(update.sourcePath);
+    const sourceIssue = validateTaskSourcePath(
+      update.sourcePath,
+      this.checkoutPaths(),
+    );
+
+    if (!found || sourceIssue) {
+      this.settingsIssue =
+        sourceIssue || {
+          code: "runtime-error",
+          message: "The task file does not belong to an added project checkout.",
+          detail: update.sourcePath,
+        };
+      void this.broadcastSnapshot();
+      return this.snapshot();
+    }
+
+    const writeIssue = await writeTaskCompletion(update);
+    if (writeIssue) {
+      this.settingsIssue = writeIssue;
+      void this.broadcastSnapshot();
+      return this.snapshot();
+    }
+
+    found.entry.validation = staleValidation(found.entry.validation);
+    await this.reloadProject(found.entry.binding.id);
+    this.settingsIssue = undefined;
+    void this.broadcastSnapshot();
+    return this.snapshot();
+  }
+
   async runValidation(projectPath = this.focusedProjectPath()): Promise<RuntimeSnapshot> {
     if (!projectPath) {
       this.settingsIssue = {
@@ -361,6 +423,7 @@ export class RuntimeState {
     const checkouts = [primaryCheckout, ...worktrees.checkouts];
     const projectBinding = {
       ...binding,
+      workspacePath: setting?.workspacePath,
       worktreesPath: setting?.worktreesPath,
       worktreePaths: setting?.worktreePaths || [],
       checkouts,
@@ -405,7 +468,9 @@ export class RuntimeState {
     return {
       projects,
       focusedProjectId,
-      focusedProjectPath: focused?.project.path ?? null,
+      focusedProjectPath: focused
+        ? focused.project.workspacePath || focused.project.path
+        : null,
       project: focused?.project,
       issue: focused?.issue,
       settingsIssue: this.settingsIssue,
@@ -676,6 +741,27 @@ export class RuntimeState {
     return Array.from(this.projects.values()).find((entry) => entry.binding.id === projectId);
   }
 
+  private checkoutPaths(): string[] {
+    return Array.from(this.projects.values()).flatMap((entry) =>
+      entry.checkouts.map((checkout) => checkout.checkout.path),
+    );
+  }
+
+  private entryByTaskSourcePath(
+    sourcePath: string,
+  ): { entry: ProjectRuntimeEntry; checkout: CheckoutRuntimeEntry } | undefined {
+    const target = path.resolve(sourcePath);
+    for (const entry of this.projects.values()) {
+      const checkout = entry.checkouts.find((item) =>
+        isPathInside(path.resolve(item.checkout.path), target),
+      );
+      if (checkout) {
+        return { entry, checkout };
+      }
+    }
+    return undefined;
+  }
+
   private entryByCheckoutPath(
     checkoutPath: string,
   ): { entry: ProjectRuntimeEntry; checkout: CheckoutRuntimeEntry } | undefined {
@@ -719,6 +805,7 @@ function invalidProjectBinding(project: RuntimeProjectSetting): ProjectBinding {
     name: path.basename(project.path) || project.path,
     dialect: "none",
     worktreesPath: project.worktreesPath,
+    workspacePath: project.workspacePath,
     worktreePaths: project.worktreePaths || [],
     checkouts: [],
     worktreeIssues: [],
@@ -752,6 +839,11 @@ function checkoutBinding(project: ProjectBinding, checkout: ProjectCheckout): Pr
 
 function normalizeUserPath(input: string): string {
   return path.resolve(expandProjectPath(input.trim()));
+}
+
+function isPathInside(root: string, target: string): boolean {
+  const relative = path.relative(root, target);
+  return Boolean(relative) && !relative.startsWith("..") && !path.isAbsolute(relative);
 }
 
 export const runtimeState = new RuntimeState();

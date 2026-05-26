@@ -37,6 +37,7 @@ describe("runtime settings", () => {
       projects: [{
         id: "prj_test000000",
         path: "/tmp/spec-ui",
+        workspacePath: "/tmp/spec-ui-workspace",
         worktreesPath: "/tmp/spec-ui-worktrees",
         worktreePaths: ["/tmp/orphan-worktree"],
       }],
@@ -53,6 +54,7 @@ describe("runtime settings", () => {
       projects: [{
         id: "prj_test000000",
         path: "/tmp/spec-ui",
+        workspacePath: "/tmp/spec-ui-workspace",
         worktreesPath: "/tmp/spec-ui-worktrees",
         worktreePaths: ["/tmp/orphan-worktree"],
       }],

@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
-import type { ProjectBinding, SpecScope, ValidationResult } from "@/lib/dashboard-types";
+import type { ProjectBinding, SpecScope, ValidationResult } from "@spec-ui/core/dashboard/types";
 
 export function notRunValidation(): ValidationResult {
   return { status: "not-run" };

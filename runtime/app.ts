@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { upgradeWebSocket } from "@hono/node-server";
 import { z } from "zod";
-import type { LanguageMode, ThemeMode } from "@/lib/dashboard-types";
+import type { LanguageMode, ThemeMode } from "@spec-ui/core/dashboard/types";
 import { isRuntimeOriginAllowed } from "./config";
 import { runtimeState } from "./state";
 
@@ -26,12 +26,22 @@ const relocateProjectSchema = z.object({
   path: z.string().min(1),
 });
 
+const workspaceDirectorySchema = z.object({
+  path: z.string().min(1).nullable(),
+});
+
 const worktreesDirectorySchema = z.object({
   path: z.string().min(1).nullable(),
 });
 
 const worktreePathSchema = z.object({
   path: z.string().min(1),
+});
+
+const taskCompletionSchema = z.object({
+  sourcePath: z.string().min(1),
+  lineNumber: z.number().int().positive(),
+  completed: z.boolean(),
 });
 
 const validationRunSchema = z
@@ -152,6 +162,28 @@ export function createRuntimeApp() {
     return c.json(await runtimeState.relocateProject(c.req.param("projectId"), body.data.path));
   });
 
+  app.put("/api/projects/:projectId/workspace-directory", async (c) => {
+    const body = workspaceDirectorySchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) {
+      return c.json(
+        {
+          issue: {
+            code: "runtime-error",
+            message: "Workspace directory path must be a string or null.",
+          },
+        },
+        400,
+      );
+    }
+
+    return c.json(
+      await runtimeState.updateProjectWorkspacePath(
+        c.req.param("projectId"),
+        body.data.path,
+      ),
+    );
+  });
+
   app.put("/api/projects/:projectId/worktrees-directory", async (c) => {
     const body = worktreesDirectorySchema.safeParse(await c.req.json().catch(() => null));
     if (!body.success) {
@@ -211,6 +243,23 @@ export function createRuntimeApp() {
   app.post("/api/projects/:projectId/refresh", async (c) =>
     c.json(await runtimeState.refreshProject(c.req.param("projectId"))),
   );
+
+  app.put("/api/changes/tasks/completion", async (c) => {
+    const body = taskCompletionSchema.safeParse(await c.req.json().catch(() => null));
+    if (!body.success) {
+      return c.json(
+        {
+          issue: {
+            code: "runtime-error",
+            message: "Task completion updates require a source path, line number, and completion state.",
+          },
+        },
+        400,
+      );
+    }
+
+    return c.json(await runtimeState.setChangeTaskCompleted(body.data));
+  });
 
   app.put("/api/settings/theme", async (c) => {
     const body = themeSchema.safeParse(await c.req.json().catch(() => null));

@@ -9,12 +9,13 @@ import type {
   RuntimeProjectSetting,
   RuntimeSettings,
   ThemeMode,
-} from "@/lib/dashboard-types";
+} from "@spec-ui/core/dashboard/types";
 import { SETTINGS_DIR_NAME, SETTINGS_FILE_NAME } from "./config";
 
 const projectSettingSchema = z.object({
   id: z.string().regex(/^prj_[a-z0-9]+$/),
   path: z.string().min(1),
+  workspacePath: z.string().min(1).optional(),
   worktreesPath: z.string().min(1).optional(),
   worktreePaths: z.array(z.string().min(1)).default([]),
 });
@@ -180,6 +181,21 @@ export function updateProjectPath(
   );
 }
 
+export function updateProjectWorkspacePath(
+  settings: RuntimeSettings,
+  projectId: string,
+  workspacePath: string | null,
+): RuntimeSettings {
+  return withProjects(
+    settings,
+    settings.projects.map((project) =>
+      project.id === projectId
+        ? { ...project, workspacePath: workspacePath || undefined }
+        : project,
+    ),
+  );
+}
+
 export function updateProjectWorktreesPath(
   settings: RuntimeSettings,
   projectId: string,
@@ -314,6 +330,7 @@ function createProjectSetting(
   return {
     id,
     path: projectPath,
+    workspacePath: undefined,
     worktreePaths: [],
   };
 }
@@ -343,6 +360,7 @@ function uniqueProjects(projects: RuntimeProjectSetting[]): RuntimeProjectSettin
     seenPaths.add(project.path);
     result.push({
       ...project,
+      workspacePath: project.workspacePath || undefined,
       worktreesPath: project.worktreesPath || undefined,
       worktreePaths: uniqueStrings(project.worktreePaths || []),
     });

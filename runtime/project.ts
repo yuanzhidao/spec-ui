@@ -9,7 +9,7 @@ import type {
   RuntimeIssue,
   SpecScope,
   SpecDialect,
-} from "@/lib/dashboard-types";
+} from "@spec-ui/core/dashboard/types";
 
 export type ProjectDiscoveryResult =
   | { ok: true; binding: ProjectBinding; issue?: RuntimeIssue }
@@ -77,6 +77,7 @@ export async function discoverProject(input: string): Promise<ProjectDiscoveryRe
     binding: {
       id: "",
       path: projectPath,
+      workspacePath: undefined,
       name,
       dialect,
       discovery,

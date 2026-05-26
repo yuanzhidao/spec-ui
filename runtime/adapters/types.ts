@@ -3,7 +3,7 @@ import type {
   ProjectBinding,
   ProjectEvent,
   ValidationResult,
-} from "@/lib/dashboard-types";
+} from "@spec-ui/core/dashboard/types";
 
 export type AdapterProjectionContext = {
   validation: ValidationResult;

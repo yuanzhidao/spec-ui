@@ -3,7 +3,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { ProjectBinding } from "@/lib/dashboard-types";
+import type { ProjectBinding } from "@spec-ui/core/dashboard/types";
 import { projectDashboardData } from "../adapters";
 
 async function fixtureProject() {
@@ -101,6 +101,10 @@ describe("OpenSpec adapter projection", () => {
       "Prepare",
       "Build",
     ]);
+    expect(activeChange?.detail?.tasks.map((task) => task.lineNumber)).toEqual([1, 2]);
+    expect(activeChange?.detail?.tasks[0].sourcePath).toBe(
+      path.join(projectPath, "openspec", "changes", "add-shell", "tasks.md"),
+    );
     expect(activeChange?.detail?.deltaSpecs).toHaveLength(1);
     expect(activeChange?.detail?.files.map((file) => file.path)).toEqual([
       "design.md",
