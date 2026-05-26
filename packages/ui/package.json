@@ -1,0 +1,16 @@
+{
+  "name": "@spec-ui/ui",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.tsx"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.5.0",
+    "@spec-ui/core": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "cmdk": "^1.1.1",
+    "lucide-react": "^1.16.0",
+    "react": "19.2.4"
+  }
+}

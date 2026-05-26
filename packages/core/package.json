@@ -1,0 +1,21 @@
+{
+  "name": "@spec-ui/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dashboard/types": "./src/dashboard/types.ts",
+    "./i18n/messages/*.json": "./src/i18n/messages/*.json",
+    "./navigation/provider": "./src/navigation/provider.tsx",
+    "./navigation/routes": "./src/navigation/routes.ts",
+    "./runtime/client": "./src/runtime/client.ts",
+    "./runtime/dashboard-context": "./src/runtime/dashboard-context.tsx",
+    "./runtime/dashboard-provider": "./src/runtime/dashboard-provider.tsx",
+    "./shared/utils": "./src/shared/utils.ts"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "react": "19.2.4",
+    "tailwind-merge": "^3.6.0"
+  }
+}

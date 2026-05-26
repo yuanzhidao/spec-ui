@@ -5,12 +5,22 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    settings: {
+      next: {
+        rootDir: "apps/web/",
+      },
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    "apps/web/.next/**",
     "out/**",
+    "apps/web/out/**",
     "build/**",
+    "apps/desktop/dist/**",
     "src-tauri/target/**",
     "src-tauri/gen/**",
     "src-tauri/binaries/**",
@@ -19,7 +29,7 @@ const eslintConfig = defineConfig([
     ".local/**",
     ".scratch/**",
     ".worktrees/**",
-    "next-env.d.ts",
+    "apps/web/next-env.d.ts",
   ]),
 ]);
 
