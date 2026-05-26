@@ -33,11 +33,11 @@
 
 - [ ] 4.1 Test host terminal environment detection and unsupported-shell issue handling.
 - [x] 4.2 Test session creation with focused project cwd.
-- [x] 4.3 Test session creation uses the user's home directory when no project is focused.
+- [ ] 4.3 Test session creation uses the user's home directory when no project is focused.
 - [ ] 4.4 Test multiple sessions remain independent.
 - [ ] 4.5 Test minimize/restore does not kill a shell process.
 - [ ] 4.6 Test route changes and webview refresh reconnect to running sessions and replay bounded buffered output.
-- [ ] 4.7 Test explicit session close terminates only that session.
+- [x] 4.7 Test explicit session close terminates only that session.
 - [ ] 4.8 Test desktop app shutdown terminates managed sessions.
 - [ ] 4.9 Test browser-only Web mode cannot access terminal commands/events.
 - [x] 4.10 Run typecheck, lint, unit tests, OpenSpec validation, Rust checks, and desktop compile checks.

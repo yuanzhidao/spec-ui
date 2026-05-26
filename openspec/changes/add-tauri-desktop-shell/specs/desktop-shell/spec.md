@@ -17,19 +17,20 @@ The system SHALL provide a Tauri v2 desktop shell for local development without 
 - **WHEN** the desktop shell starts
 - **THEN** the app uses the spec-ui product name, desktop identifier, window title, and desktop-oriented initial window size
 
-### Requirement: Existing technology stack remains
+### Requirement: Existing Web technology stack remains
 
-The system SHALL keep the existing Next.js, React, TypeScript, shadcn/ui, next-intl, pnpm, and Hono runtime stack for the desktop integration.
+The system SHALL keep the existing Next.js, React, TypeScript, shadcn/ui, next-intl, and pnpm Web stack available while Desktop runtime responsibilities move toward Tauri-native commands and events.
 
 #### Scenario: Tauri is added
 
 - **WHEN** Tauri is introduced
-- **THEN** the frontend stack is not replaced
-- **AND** the local runtime is not rewritten in Rust for this change
+- **THEN** the Web target is not removed
+- **AND** shared product UI remains available for Desktop and Web targets
+- **AND** Hono is not required to remain the packaged Desktop runtime after `migrate-to-desktop-first-tauri-renderer`
 
 ### Requirement: Production packaging is deferred
 
-The system SHALL treat production desktop packaging as a follow-up specification until sidecar/runtime serving and URL-backed dynamic routes are designed.
+The system SHALL treat production desktop packaging as a follow-up specification until the static Desktop renderer, runtime command/event boundary, and URL-backed route semantics are designed.
 
 #### Scenario: Developer inspects desktop commands
 

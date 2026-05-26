@@ -9,6 +9,7 @@
 - [x] 2.2 Add settings migration/default handling for missing `worktreesPath`.
 - [x] 2.3 Add checkout projection fields for primary and worktree-derived items.
 - [x] 2.4 Preserve project identity and routes on the primary project ID.
+- [x] 2.5 Add optional project `workspacePath` settings for terminal launch context and focused header path display.
 
 ## 3. Worktree Discovery
 
@@ -26,6 +27,7 @@
 - [x] 4.3 Aggregate Specs, Changes, Validation, and Activity from all valid checkouts under the owning project.
 - [x] 4.4 Merge same-ID Changes across checkouts and use the most recently updated checkout version as the visible primary.
 - [x] 4.5 Keep checkout source metadata available for merged Changes.
+- [x] 4.6 Record Activity events for primary and worktree checkout OpenSpec file changes in the Desktop runtime.
 
 ## 5. UI
 
@@ -34,6 +36,7 @@
 - [x] 5.3 Show detected checkout count and checkout labels in project surfaces.
 - [x] 5.4 Label Specs and Changes cards with checkout identity when a project has multiple checkouts.
 - [x] 5.5 Add clear actions for the saved worktrees directory and manual orphan paths.
+- [x] 5.6 Add Main repository and Workspace directory controls to each Project settings dialog.
 
 ## 6. Verification
 

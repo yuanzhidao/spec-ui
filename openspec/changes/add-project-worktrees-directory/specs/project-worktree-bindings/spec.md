@@ -23,6 +23,24 @@ The system SHALL let each saved project bind one optional worktrees directory an
 - **WHEN** the runtime starts with a project that has a saved worktrees directory or manual orphan worktree paths
 - **THEN** the runtime restores the settings, discovers valid worktree checkouts before projecting dashboard data, and starts watching the saved worktrees directory when present
 
+### Requirement: Project workspace directory binding
+The system SHALL let each saved project bind one optional workspace directory used for terminal launch context and focused header path display.
+
+#### Scenario: Workspace directory is saved
+- **WHEN** the user saves a readable local directory as a project's workspace directory
+- **THEN** the runtime persists the directory path on that project setting
+- **AND** terminal sessions for the focused project start in that workspace directory
+- **AND** the focused project header path displays that workspace directory
+
+#### Scenario: Workspace directory is empty
+- **WHEN** a project has no saved workspace directory
+- **THEN** terminal sessions for the focused project start in the main repository directory
+- **AND** the focused project header path displays the main repository directory
+
+#### Scenario: Workspace directory changes do not affect discovery
+- **WHEN** the user saves or clears a project's workspace directory
+- **THEN** the main repository remains the source for project identity, spec discovery, validation, and worktree ownership checks
+
 ### Requirement: Worktree directory discovery
 The runtime SHALL discover project worktree checkouts by scanning only the direct child directories of the saved worktrees directory and by validating manually bound orphan worktree paths.
 
@@ -77,12 +95,21 @@ The system SHALL model the primary project directory and valid worktree director
 - **WHEN** files change inside a valid worktree checkout
 - **THEN** the owning project refreshes and the changed checkout's projected data updates without requiring the worktree to be added as a separate project
 
+#### Scenario: Worktree checkout activity is recorded
+- **WHEN** OpenSpec files are created, updated, or deleted inside a valid worktree checkout
+- **THEN** the Activity section records events for the owning project
+- **AND** each event includes checkout and scope metadata for the changed worktree
+
 ### Requirement: Worktrees settings UI
 The system SHALL expose worktrees directory management in each project's settings surface.
 
 #### Scenario: User opens project settings
 - **WHEN** the user opens a project's settings
-- **THEN** the UI shows the primary project path, the saved worktrees directory if present, manual orphan worktree paths, detected checkout count, and recoverable worktree discovery issues
+- **THEN** the UI shows the main repository path, the saved workspace directory if present, the saved worktrees directory if present, manual orphan worktree paths, detected checkout count, and recoverable worktree discovery issues
+
+#### Scenario: User updates workspace directory
+- **WHEN** the user saves a new workspace directory path
+- **THEN** the UI requests the runtime to persist the path and update terminal launch context plus focused header path display
 
 #### Scenario: User updates worktrees directory
 - **WHEN** the user saves a new worktrees directory path

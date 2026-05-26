@@ -5,11 +5,13 @@ context: |
 
   Product direction:
   - Build a real-time dashboard tool compatible with multiple spec-driven standards.
-  - The first delivery target is a Web application.
-  - Desktop packaging uses Tauri v2 and keeps the Web app/runtime architecture.
+  - The primary product runtime is the Tauri desktop app because core workflows depend on local project access, filesystem watching, worktree discovery, and integrated terminal control.
+  - Next.js remains the Web target for browser-based and future cloud-hosted workflows; do not remove Next.js when making the project desktop-first.
+  - Desktop and Web surfaces should share one product implementation through workspace packages for UI, i18n, route semantics, domain types, runtime contracts, and state projections wherever the feature exists in both targets.
+  - Shared product code should live outside framework app directories. Use thin app shells for `apps/web` and `apps/desktop`.
   - The project is in an early shaping phase. Product behavior, information architecture, technical stack, contribution workflow, and packaging strategy changes must be defined through OpenSpec first.
-  - The MVP should let users choose a local project directory from the UI. Early Web builds may use a path-based picker/input backed by a local server; a later desktop build may replace it with a native folder picker.
-  - Realtime project updates should use WebSocket transport unless a later approved design changes the realtime protocol.
+  - The MVP should let users choose a local project directory from the UI. Desktop builds should prefer native Tauri folder selection and runtime commands; Web builds may use a Web-compatible runtime transport when that target is active.
+  - Realtime desktop project updates should use Tauri events from a native runtime boundary. Web-compatible realtime transport remains target-specific.
 
   Language and localization:
   - English is the primary project language.
@@ -18,13 +20,18 @@ context: |
   - Do not make Chinese the default language for project artifacts, UI, docs, or generated content.
 
   Technical stack:
-  - Use the latest Next.js version.
-  - Use Tauri v2 for the desktop shell while preserving the existing Web stack.
-  - Desktop production packaging keeps a Next.js server and local runtime server instead of static export.
-  - Desktop packages embed official target-specific Node runtime pieces needed to run the bundled Web/runtime servers.
+  - Use the latest Next.js version for the Web target.
+  - Use Tauri v2 for the desktop app.
+  - Prefer workspace package boundaries such as `packages/ui`, `packages/core`, and `packages/views` for shared product code.
+  - Desktop production packaging should use static renderer assets through Tauri `frontendDist`, not a bundled Next.js server.
+  - Prefer Vite for the static Desktop renderer target unless a later approved design selects a better Tauri-compatible renderer strategy.
+  - Desktop local runtime capabilities should move behind Tauri commands and events, with Rust owning local filesystem, settings, watcher, worktree, validation, and terminal boundaries where practical.
+  - Hono may remain only as a transitional Web/runtime transport; it should not remain required for packaged Desktop startup after the desktop runtime bridge exists.
+  - Desktop release artifacts should not embed Node server sidecars for frontend/runtime startup after the desktop-first migration is complete.
   - Initial desktop release artifacts target GitHub Releases only: macOS DMG, Windows NSIS, Linux AppImage, and Linux Debian package.
   - Initial desktop release artifacts are unsigned preview builds. Code signing, notarization, auto-updates, updater manifests, and package-manager publishing require later approved changes.
   - Use pnpm as the default package manager.
+  - Use pnpm workspaces when shared packages and app shells are introduced.
   - Install dependencies and scaffolding through CLI/package-manager commands that resolve current package metadata; do not hand-write package.json to add dependencies.
   - Local project reading and file watching should run outside React UI components behind a server/runtime boundary.
   - Use a maintained directory walking/glob utility for local scope discovery instead of hand-rolled recursive traversal when project scanning behavior is in scope.

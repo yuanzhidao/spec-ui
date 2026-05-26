@@ -12,4 +12,4 @@
 - [x] 2.2 Run Rust format/check for `src-tauri`.
 - [x] 2.3 Validate the OpenSpec change.
 - [x] 2.4 Smoke-check `pnpm desktop:info`.
-- [ ] 2.5 Smoke-check `pnpm desktop:dev` when a GUI launch is acceptable.
+- [x] 2.5 Smoke-check `pnpm desktop:dev` when a GUI launch is acceptable.
