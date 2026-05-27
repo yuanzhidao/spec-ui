@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "spec-ui",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "identifier": "io.github.yuanzhidao.spec-ui",
   "build": {
     "frontendDist": "../apps/desktop/dist",
