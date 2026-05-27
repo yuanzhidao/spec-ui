@@ -1,4 +1,4 @@
-name: Desktop Compile
+name: Desktop Package
 
 on:
   pull_request:
@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  compile:
+  package:
     strategy:
       fail-fast: false
       matrix:
@@ -25,18 +25,17 @@ jobs:
             arch: arm64
             os: macos-15
             target: aarch64-apple-darwin
+            bundles: dmg
           - platform: macos
             arch: x64
             os: macos-15-intel
             target: x86_64-apple-darwin
+            bundles: dmg
           - platform: windows
             arch: x64
             os: windows-2025
             target: x86_64-pc-windows-msvc
-          - platform: linux
-            arch: x64
-            os: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
+            bundles: nsis
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -58,8 +57,51 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Read package version
+        id: package-version
+        shell: bash
+        run: >
+          node -e 'const fs = require("fs");
+          const version = JSON.parse(fs.readFileSync("package.json", "utf8")).version;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);'
+
+      - name: Build desktop package
+        run: pnpm desktop:build --ci --no-sign --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
+
+      - name: Verify packaged artifact
+        run: >
+          node scripts/collect-tauri-artifacts.mjs
+          --version ${{ steps.package-version.outputs.version }}
+          --target ${{ matrix.target }}
+          --platform ${{ matrix.platform }}
+          --arch ${{ matrix.arch }}
+
+  linux-compile:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
       - name: Install Linux Tauri dependencies
-        if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -80,9 +122,9 @@ jobs:
 
       - name: Prepare desktop renderer
         env:
-          TAURI_ENV_TARGET_TRIPLE: ${{ matrix.target }}
+          TAURI_ENV_TARGET_TRIPLE: x86_64-unknown-linux-gnu
         run: pnpm desktop:prepare
 
       - name: Check desktop crate
         working-directory: src-tauri
-        run: cargo check --target ${{ matrix.target }}
+        run: cargo check --target x86_64-unknown-linux-gnu

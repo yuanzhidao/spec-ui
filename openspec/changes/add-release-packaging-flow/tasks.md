@@ -39,7 +39,8 @@
 - [x] 4.7 Make draft release aggregation idempotent by replacing same-named assets on repeated tag runs.
 - [x] 4.8 Clean up newly created draft releases or partially uploaded assets if aggregation fails.
 - [x] 4.9 Restrict GitHub Release creation and mutation to `yuanzhidao/spec-ui`.
-- [x] 4.10 Add a pull-request desktop compile workflow that does not publish release artifacts.
+- [x] 4.10 Add a pull-request desktop package workflow that builds release-equivalent macOS and Windows artifacts without publishing release artifacts.
+- [x] 4.11 Retain Linux desktop compile coverage without requiring Linux release artifacts.
 
 ## 5. Documentation
 

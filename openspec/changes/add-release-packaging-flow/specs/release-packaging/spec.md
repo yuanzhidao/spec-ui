@@ -171,18 +171,25 @@ The release flow SHALL provide draft release notes generated from commit message
 - **THEN** the release-note generator uses commits reachable from the release tag
 - **AND** the draft release still receives generated notes for maintainer review
 
-### Requirement: Pull-request desktop compile workflow
+### Requirement: Pull-request desktop package workflow
 
-The system SHALL provide a pull-request desktop compile workflow that checks desktop build readiness without publishing artifacts.
+The system SHALL provide a pull-request desktop package workflow that checks release-equivalent desktop packaging readiness without publishing artifacts.
 
-#### Scenario: Pull request checks desktop compilation
+#### Scenario: Pull request checks release-equivalent desktop packaging
 
 - **WHEN** a pull request opens or updates
-- **THEN** the desktop compile workflow prepares the desktop renderer for macOS, Windows, and Linux targets where CI runners are available
-- **AND** it runs Rust/Tauri compile checks for those targets
-- **AND** it does not build installer artifacts
+- **THEN** the desktop package workflow builds unsigned macOS DMG artifacts for `aarch64` and `x86_64`
+- **AND** it builds the unsigned Windows NSIS `.exe` artifact
+- **AND** it verifies the expected packaged artifact exists for each release platform job
 - **AND** it does not upload release artifacts as Actions artifacts
 - **AND** no GitHub Release is created or modified
+
+#### Scenario: Pull request retains Linux compile coverage
+
+- **WHEN** a pull request opens or updates
+- **THEN** the desktop package workflow prepares the desktop renderer for the Linux target
+- **AND** it runs a Linux Rust/Tauri compile check
+- **AND** it does not require Linux release artifacts in this change
 
 ### Requirement: Release verification gate
 
