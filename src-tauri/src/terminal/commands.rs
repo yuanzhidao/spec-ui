@@ -4,7 +4,7 @@ use portable_pty::{native_pty_system, CommandBuilder, PtySize};
 use tauri::{AppHandle, State};
 
 use super::{
-    environment::resolve_session_cwd,
+    environment::{resolve_session_cwd, shell_startup_args, terminal_session_path},
     pty::{spawn_exit_watcher, spawn_output_reader},
     session::{terminate_session, TerminalManager},
     types::{
@@ -73,8 +73,13 @@ fn create_session_blocking(
 
     let shell_path = PathBuf::from(&environment.shell_path);
     let mut command = CommandBuilder::new(&shell_path);
+    command.args(shell_startup_args(&shell_path));
     command.cwd(cwd.as_os_str());
     command.env("TERM", "xterm-256color");
+    command.env("SHELL", shell_path.as_os_str());
+    if let Some(path) = terminal_session_path() {
+        command.env("PATH", path);
+    }
 
     let reader = pair.master.try_clone_reader().map_err(|error| {
         terminal_issue(

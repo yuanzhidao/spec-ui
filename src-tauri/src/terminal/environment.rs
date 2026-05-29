@@ -1,5 +1,7 @@
 use std::{
-    env, fs,
+    env,
+    ffi::OsString,
+    fs,
     path::{Path, PathBuf},
     process::Command as StdCommand,
 };
@@ -161,6 +163,143 @@ fn command_stdout<S: AsRef<std::ffi::OsStr>>(program: S, args: &[&str]) -> Optio
     }
 }
 
+pub(super) fn shell_startup_args(shell_path: &Path) -> Vec<&'static str> {
+    shell_name(shell_path)
+        .filter(|name| {
+            matches!(
+                name.as_str(),
+                "bash" | "csh" | "fish" | "ksh" | "mksh" | "tcsh" | "zsh"
+            )
+        })
+        .map(|_| vec!["-l"])
+        .unwrap_or_default()
+}
+
+pub(super) fn terminal_session_path() -> Option<OsString> {
+    build_terminal_session_path(env::var_os("PATH"), home_dir().as_deref())
+}
+
+fn build_terminal_session_path(
+    existing_path: Option<OsString>,
+    home: Option<&Path>,
+) -> Option<OsString> {
+    let mut entries = Vec::new();
+
+    if let Some(home) = home {
+        push_user_tool_paths(&mut entries, home);
+    }
+
+    push_platform_tool_paths(&mut entries);
+
+    if let Some(existing_path) = existing_path {
+        for entry in env::split_paths(&existing_path) {
+            push_path_entry(&mut entries, entry);
+        }
+    }
+
+    push_system_fallback_paths(&mut entries);
+
+    env::join_paths(entries).ok()
+}
+
+#[cfg(unix)]
+fn push_user_tool_paths(entries: &mut Vec<PathBuf>, home: &Path) {
+    for entry in [
+        home.join(".local").join("bin"),
+        home.join("bin"),
+        home.join(".cargo").join("bin"),
+        home.join(".bun").join("bin"),
+        home.join(".deno").join("bin"),
+        home.join(".volta").join("bin"),
+        home.join(".npm-global").join("bin"),
+        home.join(".npm-packages").join("bin"),
+        home.join(".yarn").join("bin"),
+        home.join(".config")
+            .join("yarn")
+            .join("global")
+            .join("node_modules")
+            .join(".bin"),
+    ] {
+        push_path_entry(entries, entry);
+    }
+
+    #[cfg(target_os = "macos")]
+    push_path_entry(entries, home.join("Library").join("pnpm"));
+
+    #[cfg(target_os = "linux")]
+    push_path_entry(entries, home.join(".local").join("share").join("pnpm"));
+}
+
+#[cfg(windows)]
+fn push_user_tool_paths(entries: &mut Vec<PathBuf>, home: &Path) {
+    for entry in [
+        home.join(".cargo").join("bin"),
+        home.join(".bun").join("bin"),
+        home.join(".deno").join("bin"),
+        home.join(".volta").join("bin"),
+        home.join("AppData").join("Local").join("pnpm"),
+        home.join("AppData").join("Roaming").join("npm"),
+        home.join("scoop").join("shims"),
+    ] {
+        push_path_entry(entries, entry);
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn push_platform_tool_paths(entries: &mut Vec<PathBuf>) {
+    for entry in [
+        "/opt/homebrew/bin",
+        "/opt/homebrew/sbin",
+        "/usr/local/bin",
+        "/usr/local/sbin",
+    ] {
+        push_path_entry(entries, PathBuf::from(entry));
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn push_platform_tool_paths(entries: &mut Vec<PathBuf>) {
+    for entry in [
+        "/home/linuxbrew/.linuxbrew/bin",
+        "/home/linuxbrew/.linuxbrew/sbin",
+        "/usr/local/bin",
+        "/usr/local/sbin",
+        "/snap/bin",
+    ] {
+        push_path_entry(entries, PathBuf::from(entry));
+    }
+}
+
+#[cfg(windows)]
+fn push_platform_tool_paths(_entries: &mut Vec<PathBuf>) {}
+
+#[cfg(unix)]
+fn push_system_fallback_paths(entries: &mut Vec<PathBuf>) {
+    for entry in ["/usr/bin", "/bin", "/usr/sbin", "/sbin"] {
+        push_path_entry(entries, PathBuf::from(entry));
+    }
+}
+
+#[cfg(windows)]
+fn push_system_fallback_paths(_entries: &mut Vec<PathBuf>) {
+    // Windows user and system PATH values are provided by the process environment.
+}
+
+fn push_path_entry(entries: &mut Vec<PathBuf>, entry: PathBuf) {
+    if entry.as_os_str().is_empty() || entries.iter().any(|existing| existing == &entry) {
+        return;
+    }
+
+    entries.push(entry);
+}
+
+fn shell_name(shell_path: &Path) -> Option<String> {
+    shell_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| name.trim_end_matches(".exe").to_ascii_lowercase())
+}
+
 pub(super) fn resolve_session_cwd(requested: Option<String>) -> TerminalResult<PathBuf> {
     if let Some(path) = requested.filter(|path| !path.trim().is_empty()) {
         let path = PathBuf::from(path);
@@ -249,5 +388,46 @@ mod tests {
         let label = session_label(1, Path::new("/workspace/spec-ui"), Path::new("/bin/zsh"));
 
         assert_eq!(label, "spec-ui · zsh");
+    }
+
+    #[test]
+    fn known_unix_shells_start_as_login_shells() {
+        assert_eq!(shell_startup_args(Path::new("/bin/zsh")), vec!["-l"]);
+        assert_eq!(
+            shell_startup_args(Path::new("/usr/local/bin/fish")),
+            vec!["-l"]
+        );
+    }
+
+    #[test]
+    fn unknown_shells_do_not_receive_login_flags() {
+        assert!(shell_startup_args(Path::new("/usr/local/bin/nu")).is_empty());
+    }
+
+    #[test]
+    fn terminal_session_path_includes_user_tool_dirs_and_existing_path() {
+        let home = Path::new("/Users/example");
+        let existing_path =
+            env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
+        let session_path = build_terminal_session_path(Some(existing_path), Some(home))
+            .expect("session path should be joinable");
+        let entries = env::split_paths(&session_path).collect::<Vec<_>>();
+
+        assert!(entries.contains(&home.join(".local").join("bin")));
+        assert!(entries.contains(&home.join(".cargo").join("bin")));
+        assert!(entries.contains(&PathBuf::from("/usr/bin")));
+        assert!(entries.contains(&PathBuf::from("/bin")));
+
+        #[cfg(target_os = "macos")]
+        {
+            assert!(entries.contains(&home.join("Library").join("pnpm")));
+            assert!(entries.contains(&PathBuf::from("/opt/homebrew/bin")));
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            assert!(entries.contains(&home.join(".local").join("share").join("pnpm")));
+            assert!(entries.contains(&PathBuf::from("/home/linuxbrew/.linuxbrew/bin")));
+        }
     }
 }

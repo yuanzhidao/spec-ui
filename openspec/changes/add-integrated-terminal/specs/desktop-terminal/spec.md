@@ -35,6 +35,13 @@ The terminal SHALL present an integrated terminal UI backed by the user's system
 - **AND** terminal input is sent to that shell process
 - **AND** shell output is rendered in the integrated terminal UI
 
+#### Scenario: Packaged desktop terminal resolves user CLI tools
+
+- **WHEN** a desktop user creates a terminal session from an installed app bundle
+- **THEN** the shell starts with login-shell initialization when supported
+- **AND** the session PATH includes common user and package-manager binary directories before standard system fallback directories
+- **AND** locally installed CLI tools such as `codex` or `claude` can be resolved when they are available in the user's normal terminal environment
+
 #### Scenario: External terminal app is not opened
 
 - **WHEN** a desktop user creates a terminal session

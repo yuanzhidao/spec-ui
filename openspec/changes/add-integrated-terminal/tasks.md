@@ -17,6 +17,7 @@
 - [x] 2.8 Terminate sessions on explicit session-tab close and app shutdown.
 - [x] 2.9 Ensure UI navigation, panel minimization, and webview refresh do not terminate sessions.
 - [x] 2.10 Ensure terminal commands/events are unavailable outside the Tauri desktop context.
+- [x] 2.11 Start packaged desktop shells with login initialization and a user-tool PATH so installed CLI tools can be resolved.
 
 ## 3. UI
 

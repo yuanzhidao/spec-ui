@@ -34,6 +34,8 @@ New terminal sessions SHALL start the user's default system shell for the curren
 - macOS/Linux: the user's configured shell when available, falling back to a standard shell.
 - Windows: PowerShell or the system default shell chosen by the implementation.
 
+Packaged desktop apps do not reliably inherit the user's login-shell environment. On macOS/Linux, terminal sessions SHALL start supported shells as login shells and seed PATH with common user tool directories such as local package-manager bins, Homebrew locations, and standard system fallbacks before the shell reads user startup files. This keeps installed app bundles able to resolve project CLI tools such as `codex`, `claude`, package managers, and language toolchains when they are installed in the user's normal terminal environment.
+
 When a focused project exists, new terminal sessions SHALL start in that project's root directory. Existing sessions SHALL keep their original working directory when the focused project changes. When no focused project exists, new terminal sessions SHALL start in the user's home directory. If the home directory cannot be resolved, terminal creation SHALL be disabled with a visible recoverable issue.
 
 ## Decision: Multi-session terminal panel

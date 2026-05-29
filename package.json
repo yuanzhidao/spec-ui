@@ -1,6 +1,6 @@
 {
   "name": "spec-ui",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "scripts": {
     "dev": "concurrently -n web,runtime -c blue,magenta \"pnpm dev:web\" \"tsx watch runtime/server.ts\"",

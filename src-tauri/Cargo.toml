@@ -1,6 +1,6 @@
 [package]
 name = "spec-ui-desktop"
-version = "0.0.2"
+version = "0.0.3"
 description = "Desktop shell for spec-ui"
 authors = ["spec-ui contributors"]
 license = "Apache-2.0"
